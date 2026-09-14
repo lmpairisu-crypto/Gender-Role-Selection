@@ -82,7 +82,7 @@ function createGenderMenu() {
         value: "lgbt+"
     },
     {
-        label: "🙈 Prefer not to say",
+        label: "🙊 Prefer not to say",
         description: "Don't disclose your gender",
         value: "prefer_not"
     }
