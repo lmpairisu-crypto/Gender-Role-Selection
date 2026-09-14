@@ -49,7 +49,7 @@ server.listen(PORT, "0.0.0.0", () => {
 const GENDER_ROLES = {
   male: "1514568565016232158",
   female: "1514569124305571840",
-  nonbinary: "1514569385841528833",
+  lgbt+: "1514569385841528833",
   prefer_not: "1548936806794526741"
 };
 
@@ -67,24 +67,24 @@ function createGenderMenu() {
     .setMaxValues(1)
     .addOptions(
       {
-        label: "Male",
+        label: ♂️"Male",
         description: "Select the Male role",
-        value: "male"
+        value: ♂️"masculine"
       },
       {
-        label: "Female",
+        label: ♀️"Female",
         description: "Select the Female role",
-        value: "female"
+        value: ♀️"feminine"
       },
       {
-        label: "Non-binary",
+        label: 🏳‍🌈"lgbt+",
         description: "Select the Non-binary role",
-        value: "nonbinary"
+        value: 🏳‍🌈"nonbinary"
       },
       {
-        label: "Prefer not to say",
+        label: 🙊"Prefer not to say",
         description: "Don't disclose your gender",
-        value: "prefer_not"
+        value: 🙊"prefer_not"
       }
     );
 
@@ -103,8 +103,10 @@ function createGenderEmbed() {
     .setDescription(
       "Please select your gender from the menu below.\n\n" +
       "**Your selection is private.**\n" +
-      "Only you will see the confirmation from the bot.\n\n" +
-      "You can change your selection at any time."
+      "Only you will see the confirmation from the bot <:AI:1549055579362828309>.\n\n" +
+      "You can change your selection at any time.\n\n"
+      "🏠 **Gender-Based Access:**\n"
+      "Selecting the role that matches your gender will give you access to an extra private channel or a dorm shared with members of the same gender."
     )
     .setFooter({
       text: "Your selected role will be updated automatically."
