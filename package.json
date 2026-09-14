@@ -1,0 +1,12 @@
+{
+  "name": "gender-role-selection-bot",
+  "version": "1.0.0",
+  "description": "Discord private gender role selection bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3"
+  }
+}
