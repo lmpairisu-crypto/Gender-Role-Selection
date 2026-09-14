@@ -104,7 +104,7 @@ function createGenderEmbed() {
       "<a:Avisala:1542448826265243660> Please select your gender from the menu below.\n\n" +
       "**Your selection is private.**\n" +
       "Only you will see the confirmation from the bot <:AI:1549055579362828309>.\n\n" +
-      "You can change your selection at any time.\n\n"
+      "You can change your selection at any time.\n\n" +
       "🏠 **Gender-Based Access:**\n"
       "Selecting the role that matches your gender will give you access to an extra private channel or a dorm shared with members of the same gender."
     )
