@@ -67,24 +67,24 @@ function createGenderMenu() {
     .setMaxValues(1)
     .addOptions(
       {
-        label: "♂️Male",
+        label: "♂️ Male",
         description: "Select the Male role",
-        value: "♂️masculine"
+        value: "♂️ masculine"
       },
       {
-        label: "♀️Female",
+        label: "♀️ Female",
         description: "Select the Female role",
-        value: "♀️feminine"
+        value: "♀️ feminine"
       },
       {
-        label: "🏳‍🌈lgbt+",
+        label: "🏳‍🌈 lgbt+",
         description: "Select the Non-binary role",
-        value: "🏳‍🌈nonbinary"
+        value: "🏳‍🌈 nonbinary"
       },
       {
-        label: "🙊Prefer not to say",
+        label: "🙊 Prefer not to say",
         description: "Don't disclose your gender",
-        value: "🙊prefer_not"
+        value: "🙊 prefer_not"
       }
     );
 
@@ -103,10 +103,10 @@ function createGenderEmbed() {
     .setDescription(
       "<a:Avisala:1542448826265243660> Please select your gender from the menu below.\n\n" +
       "**Your selection is private.**\n" +
-      "Only you will see the confirmation from the bot <:AI:1549055579362828309>.\n\n" +
+      "Only you will see the confirmation from the bot. <:AI:1549055579362828309> \n\n" +
       "You can change your selection at any time.\n\n" +
       "🏠 **Gender-Based Access:**\n" +
-      "Selecting the role that matches your gender will give you access to an extra private channel or a dorm shared with members of the same gender..."
+      "Selecting the role that matches your gender will give you access to an extra private channel or a dorm shared with members of the same gender."
     )
     .setFooter({
       text: "Your selected role will be updated automatically."
