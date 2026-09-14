@@ -67,12 +67,12 @@ function createGenderMenu() {
     .setMaxValues(1)
     .addOptions(
     {
-        label: "♂ Male",
+        label: "♂️ Male",
         description: "Select the Male role",
         value: "male"
     },
     {
-        label: "♀ Female",
+        label: "♀️ Female",
         description: "Select the Female role",
         value: "female"
     },
