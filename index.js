@@ -66,27 +66,27 @@ function createGenderMenu() {
     .setMinValues(1)
     .setMaxValues(1)
     .addOptions(
-      {
-        label: "♂️ Male",
+    {
+        label: "♂ Male",
         description: "Select the Male role",
-        value: "♂️ masculine"
-      },
-      {
-        label: "♀️ Female",
+        value: "male"
+    },
+    {
+        label: "♀ Female",
         description: "Select the Female role",
-        value: "♀️ feminine"
-      },
-      {
-        label: "🏳‍🌈 lgbt+",
-        description: "Select the Non-binary role",
-        value: "🏳‍🌈 nonbinary"
-      },
-      {
-        label: "🙊 Prefer not to say",
+        value: "female"
+    },
+    {
+        label: "🏳️‍🌈 LGBT+",
+        description: "Select the LGBT+ role",
+        value: "lgbt+"
+    },
+    {
+        label: "🙈 Prefer not to say",
         description: "Don't disclose your gender",
-        value: "🙊 prefer_not"
-      }
-    );
+        value: "prefer_not"
+    }
+)
 
   return new ActionRowBuilder()
     .addComponents(menu);
