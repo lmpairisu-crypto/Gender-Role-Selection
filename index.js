@@ -184,4 +184,35 @@ client.on("shardReconnecting", (shardId) => {
 // BOT READY
 // ==========================================
 
-client.once("clientReady", async
+client.once("ready", async () => {
+  console.log("==========================================");
+  console.log(`🤖 Logged in as ${client.user.tag}`);
+  console.log(`🆔 Bot ID: ${client.user.id}`);
+  console.log("==========================================");
+
+  try {
+    console.log(`🔎 Looking for gender channel: ${GENDER_CHANNEL_ID}`);
+
+    const channel = await client.channels.fetch(GENDER_CHANNEL_ID);
+
+    if (!channel) {
+      console.error("❌ Gender channel not found.");
+      return;
+    }
+
+    console.log(`✅ Channel found: ${channel.name}`);
+
+    await channel.send({
+      embeds: [createGenderEmbed()],
+      components: [createGenderMenu()]
+    });
+
+    console.log("✅ Gender selection panel posted!");
+    console.log(`🆔 Message ID: ${channel.lastMessageId || "unknown"}`);
+    console.log(`📍 Channel: #${channel.name}`);
+
+  } catch (error) {
+    console.error("❌ Failed to post gender panel:");
+    console.error(error);
+  }
+});
