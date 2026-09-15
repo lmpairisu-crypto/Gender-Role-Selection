@@ -144,25 +144,24 @@ function createGenderMenu() {
 // ==================================================
 // EMBED
 // ==================================================
-
- function createEmbed() {
+function createEmbed() {
   return new EmbedBuilder()
     .setColor("#5865F2")
     .setAuthor({
       name: "Pinoy Big Sister",
-      url: process.env.GIF_URL
+      url: process.env.PICTURE_URL
     })
     .setTitle("🎎 Gender Role Selection")
     .setDescription(
       "Select your gender below to receive your role.\n\n" +
       "Your selection is private 🔒.\n\n" +
-      "You can change your selection whanever you want.\n\n" +
-      "\n\n" +
+      "You can change your selection whenever you want.\n\n" +
       "🏠 **Gender-Based Access:**\n" +
       "Selecting a role will give you access to the appropriate private channel or dorm."
     )
+    .setThumbnail(process.env.GIF_URL)
     .setImage(process.env.DORM_IMAGE_URL);
- }
+}
 // ==================================================
 // FIND ROLE USING RENDER VARIABLE
 // ==================================================
