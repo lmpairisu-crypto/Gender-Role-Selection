@@ -1,252 +1,73 @@
-const {
-  Client,
-  GatewayIntentBits,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  EmbedBuilder,
-  ChannelType,
-  MessageFlags
-} = require("discord.js");
-
+const { Client, GatewayIntentBits } = require("discord.js");
 const http = require("http");
-
-// ==========================================
-// ENVIRONMENT VARIABLES
-// ==========================================
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const PORT = Number(process.env.PORT) || 10000;
 
-// ==========================================
-// CONFIGURATION
-// ==========================================
-
-const GENDER_CHANNEL_ID = "1539643480714903602";
-
-const GENDER_ROLES = {
-  male: "1514568565016232158",
-  female: "1514569124305571840",
-  lgbt: "1514569385841528833",
-  prefer_not: "1548936806794526741"
-};
-
-const ALL_GENDER_ROLE_IDS = Object.values(GENDER_ROLES);
-
-// ==========================================
-// STARTUP
-// ==========================================
-
-console.log("==========================================");
-console.log("🚀 Starting Gender Role Bot...");
-console.log("==========================================");
+console.log("🚀 TEST BOT STARTING");
 
 if (!TOKEN) {
-  console.error("❌ DISCORD_TOKEN is missing from Render.");
+  console.error("❌ DISCORD_TOKEN IS MISSING");
   process.exit(1);
 }
 
-console.log("🔑 Discord token detected.");
-
-// ==========================================
-// RENDER HEALTH SERVER
-// ==========================================
+console.log("✅ DISCORD_TOKEN exists");
+console.log("🔢 Token length:", TOKEN.trim().length);
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/health") {
-    res.writeHead(200, {
-      "Content-Type": "text/plain"
-    });
-
-    return res.end("OK");
-  }
-
-  res.writeHead(200, {
-    "Content-Type": "text/plain"
-  });
-
-  res.end("Gender Role Bot is online.");
+  res.writeHead(200);
+  res.end("OK");
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Health server running on port ${PORT}`);
+  console.log(`🌐 Server running on port ${PORT}`);
 });
-
-// ==========================================
-// DISCORD CLIENT
-// ==========================================
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds
-  ]
+  intents: [GatewayIntentBits.Guilds]
 });
 
-// ==========================================
-// GENDER MENU
-// ==========================================
-
-function createGenderMenu() {
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId("gender_select")
-    .setPlaceholder("Select your gender")
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(
-      {
-        label: "♂️ Male",
-        description: "Select the Male role",
-        value: "male"
-      },
-      {
-        label: "♀️ Female",
-        description: "Select the Female role",
-        value: "female"
-      },
-      {
-        label: "🏳️‍🌈 LGBT",
-        description: "Select the LGBT+ role",
-        value: "lgbt+"
-      },
-      {
-        label: "🙊 Prefer not to say",
-        description: "Don't disclose your gender",
-        value: "prefer_not"
-      }
-    );
-
-  return new ActionRowBuilder()
-    .addComponents(menu);
-}
-
-// ==========================================
-// GENDER EMBED
-// ==========================================
-
-function createGenderEmbed() {
-  return new EmbedBuilder()
-    .setColor("#5865F2")
-    .setTitle("🔒 Gender Selection")
-    .setDescription(
-      "<a:Avisala:1542448826265243660> " +
-      "Please select your gender from the menu below.\n\n" +
-
-      "**Your selection is private.**\n" +
-
-      "Only you will see the confirmation from the bot. " +
-      "<:AI:1549055579362828309>\n\n" +
-
-      "You can change your selection at any time.\n\n" +
-
-      "🏠 **Gender-Based Access:**\n" +
-
-      "Selecting the role that matches your gender will give you access " +
-      "to an extra private channel or a dorm shared with members of " +
-      "the same gender."
-    )
-    .setFooter({
-      text: "Your selected role will be updated automatically."
-    });
-}
-
-// ==========================================
-// DISCORD ERRORS
-// ==========================================
-
-client.on("error", (error) => {
-  console.error("❌ Discord Client Error:");
-  console.error(error);
-});
-
-client.on("warn", (warning) => {
-  console.warn("⚠️ Discord Warning:", warning);
-});
-
-client.on("shardError", (error) => {
-  console.error("❌ Discord Gateway Error:");
-  console.error(error);
-});
-
-client.on("shardDisconnect", (event, shardId) => {
-  console.error(
-    `❌ Discord shard ${shardId} disconnected.`
-  );
-
-  console.error(event);
-});
-
-client.on("shardReconnecting", (shardId) => {
-  console.log(
-    `🔄 Discord shard ${shardId} reconnecting...`
-  );
-});
-
-// ==========================================
-// BOT READY
-// ==========================================
-client.once("ready", async () => {
-  console.log("==========================================");
-  console.log("✅ DISCORD READY EVENT RECEIVED!");
-  console.log(`🤖 Logged in as: ${client.user.tag}`);
-  console.log(`🆔 Bot ID: ${client.user.id}`);
-  console.log("==========================================");
-
-  try {
-    console.log(`🔎 Fetching channel: ${GENDER_CHANNEL_ID}`);
-
-    const channel = await client.channels.fetch(GENDER_CHANNEL_ID);
-
-    if (!channel) {
-      console.error("❌ CHANNEL NOT FOUND!");
-      return;
-    }
-
-    console.log(`✅ CHANNEL FOUND: ${channel.name}`);
-    console.log("📨 Sending gender selection panel...");
-
-    const message = await channel.send({
-      embeds: [createGenderEmbed()],
-      components: [createGenderMenu()]
-    });
-
-    console.log("✅ GENDER PANEL POSTED!");
-    console.log(`🆔 Message ID: ${message.id}`);
-
-  } catch (error) {
-    console.error("❌ CHANNEL ERROR:");
-    console.error(error);
-  }
+client.on("debug", (message) => {
+  console.log("🔧 DEBUG:", message);
 });
 
 client.on("error", (error) => {
-  console.error("❌ DISCORD CLIENT ERROR:");
-  console.error(error);
+  console.error("❌ CLIENT ERROR:", error);
 });
 
 client.on("shardError", (error) => {
-  console.error("❌ DISCORD SHARD ERROR:");
-  console.error(error);
+  console.error("❌ SHARD ERROR:", error);
 });
 
-console.log("🔐 Attempting Discord login...");
+client.on("shardReady", (id) => {
+  console.log(`✅ SHARD ${id} READY`);
+});
+
+client.once("ready", () => {
+  console.log("================================");
+  console.log("🎉 BOT LOGGED INTO DISCORD!");
+  console.log(`🤖 ${client.user.tag}`);
+  console.log(`🆔 ${client.user.id}`);
+  console.log(`🏠 Servers: ${client.guilds.cache.size}`);
+  console.log("================================");
+});
+
+console.log("🔐 ATTEMPTING DISCORD LOGIN...");
 
 client.login(TOKEN.trim())
   .then(() => {
-    console.log("🔐 Discord login() completed.");
+    console.log("✅ LOGIN PROMISE COMPLETED");
   })
   .catch((error) => {
-    console.error("❌ DISCORD LOGIN FAILED:");
+    console.error("❌ LOGIN FAILED");
     console.error(error);
-    process.exit(1);
   });
 
 setTimeout(() => {
   if (!client.isReady()) {
-    console.error("❌ DISCORD READY TIMEOUT!");
-    console.error(
-      "The bot has not connected to Discord Gateway after 30 seconds."
-    );
-    console.error(
-      "Check DISCORD_TOKEN and the Discord bot configuration."
-    );
+    console.error("================================");
+    console.error("❌ DISCORD CONNECTION FAILED");
+    console.error("❌ Bot is NOT ready after 30 seconds");
+    console.error("================================");
   }
 }, 30000);
