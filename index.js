@@ -1,73 +1,123 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  EmbedBuilder,
+  MessageFlags
+} = require("discord.js");
+
 const http = require("http");
 
-const TOKEN = process.env.DISCORD_TOKEN;
+// ==========================================
+// ENVIRONMENT
+// ==========================================
+
+const TOKEN = process.env.DISCORD_TOKEN?.trim();
 const PORT = Number(process.env.PORT) || 10000;
 
-console.log("🚀 TEST BOT STARTING");
+// ==========================================
+// IDs
+// ==========================================
+
+const GENDER_CHANNEL_ID = "1539643480714903602";
+
+const GENDER_ROLES = {
+  male: "1514568565016232158",
+  female: "1514569124305571840",
+  "lgbt+": "1514569385841528833",
+  prefer_not: "1548936806794526741"
+};
+
+const ALL_GENDER_ROLE_IDS = Object.values(GENDER_ROLES);
+
+// ==========================================
+// START
+// ==========================================
+
+console.log("==========================================");
+console.log("🚀 Starting Gender Role Bot...");
+console.log("==========================================");
 
 if (!TOKEN) {
-  console.error("❌ DISCORD_TOKEN IS MISSING");
+  console.error("❌ DISCORD_TOKEN is missing!");
   process.exit(1);
 }
 
-console.log("✅ DISCORD_TOKEN exists");
-console.log("🔢 Token length:", TOKEN.trim().length);
+console.log("🔑 DISCORD_TOKEN exists");
+console.log(`🔢 Token length: ${TOKEN.length}`);
+
+// ==========================================
+// RENDER HEALTH SERVER
+// ==========================================
 
 const server = http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end("OK");
+  if (req.url === "/health") {
+    res.writeHead(200, {
+      "Content-Type": "text/plain"
+    });
+
+    return res.end("OK");
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "text/plain"
+  });
+
+  res.end("Gender Role Bot is online.");
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Server running on port ${PORT}`);
+  console.log(`🌐 Health server running on port ${PORT}`);
 });
+
+// ==========================================
+// DISCORD CLIENT
+// ==========================================
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds
+  ]
 });
 
-client.on("debug", (message) => {
-  console.log("🔧 DEBUG:", message);
+// ==========================================
+// DISCORD DEBUG
+// ==========================================
+
+client.on("debug", message => {
+  console.log(`🔧 DISCORD DEBUG: ${message}`);
 });
 
-client.on("error", (error) => {
-  console.error("❌ CLIENT ERROR:", error);
+client.on("warn", message => {
+  console.warn(`⚠️ DISCORD WARNING: ${message}`);
 });
 
-client.on("shardError", (error) => {
-  console.error("❌ SHARD ERROR:", error);
+client.on("error", error => {
+  console.error("❌ DISCORD CLIENT ERROR:");
+  console.error(error);
 });
 
-client.on("shardReady", (id) => {
-  console.log(`✅ SHARD ${id} READY`);
+client.on("shardError", error => {
+  console.error("❌ DISCORD SHARD ERROR:");
+  console.error(error);
 });
 
-client.once("ready", () => {
-  console.log("================================");
-  console.log("🎉 BOT LOGGED INTO DISCORD!");
-  console.log(`🤖 ${client.user.tag}`);
-  console.log(`🆔 ${client.user.id}`);
-  console.log(`🏠 Servers: ${client.guilds.cache.size}`);
-  console.log("================================");
+client.on("shardDisconnect", (event, shardId) => {
+  console.error(`🔴 DISCORD DISCONNECTED - Shard ${shardId}`);
+  console.error(event);
 });
 
-console.log("🔐 ATTEMPTING DISCORD LOGIN...");
+client.on("shardReconnecting", shardId => {
+  console.log(`🔄 DISCORD RECONNECTING - Shard ${shardId}`);
+});
 
-client.login(TOKEN.trim())
-  .then(() => {
-    console.log("✅ LOGIN PROMISE COMPLETED");
-  })
-  .catch((error) => {
-    console.error("❌ LOGIN FAILED");
-    console.error(error);
-  });
+// ==========================================
+// GENDER MENU
+// ==========================================
 
-setTimeout(() => {
-  if (!client.isReady()) {
-    console.error("================================");
-    console.error("❌ DISCORD CONNECTION FAILED");
-    console.error("❌ Bot is NOT ready after 30 seconds");
-    console.error("================================");
-  }
-}, 30000);
+function createGenderMenu() {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId("gender_select")
+    .setPlaceholder("Select your gender")
+    .
