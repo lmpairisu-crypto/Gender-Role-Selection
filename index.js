@@ -545,16 +545,14 @@ client.on(
       // PRIVATE CONFIRMATION
       // ======================================
 
-      await interaction.reply({
+      if (!interaction.replied && !interaction.deferred) {
+  await interaction.reply({
+    content:
+      "❌ I couldn't update your gender role. Please contact staff.",
 
-        content:
-          `✅ Your gender role is now **${selectedRole.name}**.\n\n` +
-          `🔒 This confirmation is private and only visible to you.`,
-
-        await interaction.reply({
-  content: "...",
-  flags: 64
-});
+    flags: 64
+  });
+      }
 
       });
 
