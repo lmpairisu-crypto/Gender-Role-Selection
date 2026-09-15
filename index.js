@@ -18,6 +18,10 @@ app.get("/", (req, res) => {
   res.status(200).send("Gender Role Bot is online!");
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🌐 Health server running on port ${PORT}`);
 });
@@ -144,15 +148,20 @@ function createGenderMenu() {
  function createEmbed() {
   return new EmbedBuilder()
     .setColor("#5865F2")
+    .setAuthor({
+      name: "Pinoy Big Sister Landlady",
+      url: process.env.GIF_URL
+    })
     .setTitle("🎎 Gender Role Selection")
     .setDescription(
-      "<a:Avisala:1542448826265243660> Select your gender below to receive your role.\n\n" +
-      "Your selection is private 🔒.\n" +
-      "You can change your selection whenever you want.\n\n" +
+      "Select your gender below to receive your role.\n\n" +
+      "Your selection is private 🔒.\n\n" +
+      "You can change your selection whanever you want.\n\n" +
+      "---\n\n" +
       "🏠 **Gender-Based Access:**\n" +
       "Selecting a role will give you access to the appropriate private channel or dorm."
     )
-    .setImage(process.env.GIF_URL);
+    .setImage(process.env.DORM_IMAGE_URL);
  }
 // ==================================================
 // FIND ROLE USING RENDER VARIABLE
