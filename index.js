@@ -26,7 +26,7 @@ const GENDER_CHANNEL_ID = "1539643480714903602";
 const GENDER_ROLES = {
   male: "1514568565016232158",
   female: "1514569124305571840",
-  "lgbt+": "1514569385841528833",
+  lgbt: "1514569385841528833",
   prefer_not: "1548936806794526741"
 };
 
@@ -183,36 +183,70 @@ client.on("shardReconnecting", (shardId) => {
 // ==========================================
 // BOT READY
 // ==========================================
-
 client.once("ready", async () => {
   console.log("==========================================");
-  console.log(`🤖 Logged in as ${client.user.tag}`);
+  console.log("✅ DISCORD READY EVENT RECEIVED!");
+  console.log(`🤖 Logged in as: ${client.user.tag}`);
   console.log(`🆔 Bot ID: ${client.user.id}`);
   console.log("==========================================");
 
   try {
-    console.log(`🔎 Looking for gender channel: ${GENDER_CHANNEL_ID}`);
+    console.log(`🔎 Fetching channel: ${GENDER_CHANNEL_ID}`);
 
     const channel = await client.channels.fetch(GENDER_CHANNEL_ID);
 
     if (!channel) {
-      console.error("❌ Gender channel not found.");
+      console.error("❌ CHANNEL NOT FOUND!");
       return;
     }
 
-    console.log(`✅ Channel found: ${channel.name}`);
+    console.log(`✅ CHANNEL FOUND: ${channel.name}`);
+    console.log("📨 Sending gender selection panel...");
 
-    await channel.send({
+    const message = await channel.send({
       embeds: [createGenderEmbed()],
       components: [createGenderMenu()]
     });
 
-    console.log("✅ Gender selection panel posted!");
-    console.log(`🆔 Message ID: ${channel.lastMessageId || "unknown"}`);
-    console.log(`📍 Channel: #${channel.name}`);
+    console.log("✅ GENDER PANEL POSTED!");
+    console.log(`🆔 Message ID: ${message.id}`);
 
   } catch (error) {
-    console.error("❌ Failed to post gender panel:");
+    console.error("❌ CHANNEL ERROR:");
     console.error(error);
   }
 });
+
+client.on("error", (error) => {
+  console.error("❌ DISCORD CLIENT ERROR:");
+  console.error(error);
+});
+
+client.on("shardError", (error) => {
+  console.error("❌ DISCORD SHARD ERROR:");
+  console.error(error);
+});
+
+console.log("🔐 Attempting Discord login...");
+
+client.login(TOKEN.trim())
+  .then(() => {
+    console.log("🔐 Discord login() completed.");
+  })
+  .catch((error) => {
+    console.error("❌ DISCORD LOGIN FAILED:");
+    console.error(error);
+    process.exit(1);
+  });
+
+setTimeout(() => {
+  if (!client.isReady()) {
+    console.error("❌ DISCORD READY TIMEOUT!");
+    console.error(
+      "The bot has not connected to Discord Gateway after 30 seconds."
+    );
+    console.error(
+      "Check DISCORD_TOKEN and the Discord bot configuration."
+    );
+  }
+}, 30000);
