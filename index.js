@@ -600,28 +600,74 @@ client.on(
 
   }
 );
+// ==========================================
+// DISCORD CONNECTION DEBUG
+// ==========================================
 
-// ==========================================
-// DISCORD LOGIN
-// ==========================================
+client.on("debug", info => {
+  console.log(`🔍 DISCORD DEBUG: ${info}`);
+});
+
+client.on("shardConnecting", shardId => {
+  console.log(`🔌 Discord shard ${shardId} connecting...`);
+});
+
+client.on("shardReady", shardId => {
+  console.log(`✅ Discord shard ${shardId} is READY.`);
+});
+
+client.on("shardReconnecting", shardId => {
+  console.log(`🔄 Discord shard ${shardId} reconnecting...`);
+});
+
+client.on("shardDisconnect", (event, shardId) => {
+  console.error(
+    `❌ Discord shard ${shardId} disconnected:`,
+    event
+  );
+});
+
+client.on("shardError", (error, shardId) => {
+  console.error(
+    `❌ Discord shard ${shardId} error:`
+  );
+
+  console.error(error);
+});
 
 console.log("🔐 Attempting Discord login...");
 
-client.login(TOKEN)
+const loginTimeout = setTimeout(() => {
 
+  console.error("==========================================");
+  console.error("❌ DISCORD LOGIN TIMEOUT");
+  console.error("==========================================");
+  console.error(
+    "The bot has not received a Discord READY event."
+  );
+  console.error(
+    "Check the Discord token and Discord Gateway connection."
+  );
+
+}, 30000);
+
+client.login(TOKEN.trim())
   .then(() => {
 
-    console.log(
-      "🔐 Discord login successful."
-    );
+    clearTimeout(loginTimeout);
+
+    console.log("==========================================");
+    console.log("🔐 Discord login successful.");
+    console.log("==========================================");
 
   })
-
   .catch(error => {
 
-    console.error(
-      "❌ Discord login failed:"
-    );
+    clearTimeout(loginTimeout);
+
+    console.error("==========================================");
+    console.error("❌ Discord login FAILED");
+    console.error("==========================================");
 
     console.error(error);
 
