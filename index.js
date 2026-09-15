@@ -1,44 +1,33 @@
-
+const express = require("express");
 const {
   Client,
   GatewayIntentBits,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   EmbedBuilder,
-  MessageFlags
 } = require("discord.js");
 
-const http = require("http");
+// ===============================
+// RENDER WEB SERVER
+// ===============================
 
-// ==========================================
-// ENVIRONMENT
-// ==========================================
+const app = express();
+const PORT = process.env.PORT || 10000;
 
-const TOKEN = process.env.DISCORD_TOKEN?.trim();
-const PORT = Number(process.env.PORT) || 10000;
+app.get("/", (req, res) => {
+  res.status(200).send("Gender Role Bot is online!");
+});
 
-// ==========================================
-// IDs
-// ==========================================
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🌐 Health server running on port ${PORT}`);
+});
 
-const GENDER_CHANNEL_ID = "1539643480714903602";
+// ===============================
+// DISCORD TOKEN
+// ===============================
 
-const GENDER_ROLES = {
-  male: "1514568565016232158",
-  female: "1514569124305571840",
-  "lgbt+": "1514569385841528833",
-  prefer_not: "1548936806794526741"
-};
-
-const ALL_GENDER_ROLE_IDS = Object.values(GENDER_ROLES);
-
-// ==========================================
-// START
-// ==========================================
-
-console.log("==========================================");
-console.log("🚀 Starting Gender Role Bot...");
-console.log("==========================================");
+const TOKEN = process.env.DISCORD_TOKEN;
 
 if (!TOKEN) {
   console.error("❌ DISCORD_TOKEN is missing!");
@@ -46,390 +35,527 @@ if (!TOKEN) {
 }
 
 console.log("🔑 DISCORD_TOKEN exists");
-console.log(`🔢 Token length: ${TOKEN.length}`);
+console.log(`🔐 Token length: ${TOKEN.length}`);
 
-// ==========================================
-// RENDER HEALTH SERVER
-// ==========================================
-
-const server = http.createServer((req, res) => {
-  if (req.url === "/health") {
-    res.writeHead(200, {
-      "Content-Type": "text/plain"
-    });
-
-    return res.end("OK");
-  }
-
-  res.writeHead(200, {
-    "Content-Type": "text/plain"
-  });
-
-  res.end("Gender Role Bot is online.");
-});
-
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Health server running on port ${PORT}`);
-});
-
-// ==========================================
+// ===============================
 // DISCORD CLIENT
-// ==========================================
+// ===============================
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds
-  ]
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+  ],
 });
 
-// ==========================================
-// DISCORD DEBUG
-// ==========================================
+// ===============================
+// ROLE NAMES
+// ===============================
 
-client.on("debug", message => {
-  console.log(`🔧 DISCORD DEBUG: ${message}`);
-});
+const ROLE_NAMES = {
+  male: "♂",
+  female: "♀",
+  lgbt: "🏳️‍🌈",
+  other: "😶",
+};
 
-client.on("warn", message => {
-  console.warn(`⚠️ DISCORD WARNING: ${message}`);
-});
+// Optional role IDs.
+// You can leave these empty.
+// If you know the IDs, put them in Render Environment Variables.
 
-client.on("error", error => {
-  console.error("❌ DISCORD CLIENT ERROR:");
-  console.error(error);
-});
+const ROLE_IDS = {
+  male: process.env.MALE_ROLE_ID || null,
+  female: process.env.FEMALE_ROLE_ID || null,
+  lgbt: process.env.LGBT_ROLE_ID || null,
+  other: process.env.OTHER_ROLE_ID || null,
+};
 
-client.on("shardError", error => {
-  console.error("❌ DISCORD SHARD ERROR:");
-  console.error(error);
-});
+// Optional channel ID.
+// If you add CHANNEL_ID in Render, the panel will be sent there.
 
-client.on("shardDisconnect", (event, shardId) => {
-  console.error(`🔴 DISCORD DISCONNECTED - Shard ${shardId}`);
-  console.error(event);
-});
+const CHANNEL_ID = process.env.CHANNEL_ID || null;
 
-client.on("shardReconnecting", shardId => {
-  console.log(`🔄 DISCORD RECONNECTING - Shard ${shardId}`);
-});
+const SELECT_MENU_ID = "gender_select";
 
-// ==========================================
+// ===============================
 // GENDER MENU
-// ==========================================
+// ===============================
 
-function createGenderMenu() {
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId("gender_select")
-    .setPlaceholder("Select your gender")
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(
-      {
-        label: "♂️ Male",
-        description: "Select the Male role",
-        value: "male"
-      },
-      {
-        label: "♀️ Female",
-        description: "Select the Female role",
-        value: "female"
-      },
-      {
-        label: "🏳️‍🌈 LGBT",
-        description: "Select the LGBT+ role",
-        value: "lgbt+"
-      },
-      {
-        label: "🙊 Prefer not to say",
-        description: "Don't disclose your gender",
-        value: "prefer_not"
+const menu = new StringSelectMenuBuilder()
+  .setCustomId(SELECT_MENU_ID)
+  .setPlaceholder("Choose your gender role")
+  .addOptions(
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Male")
+      .setValue("male")
+      .setEmoji("♂")
+      .setDescription("Get the male role"),
+
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Female")
+      .setValue("female")
+      .setEmoji("♀")
+      .setDescription("Get the female role"),
+
+    new StringSelectMenuOptionBuilder()
+      .setLabel("LGBT")
+      .setValue("lgbt")
+      .setEmoji("🏳️‍🌈")
+      .setDescription("Get the LGBT role"),
+
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Other")
+      .setValue("other")
+      .setEmoji("😶")
+      .setDescription("Get the other role")
+  );
+
+const row = new ActionRowBuilder().addComponents(menu);
+
+// ===============================
+// EMBED
+// ===============================
+
+const embed = new EmbedBuilder()
+  .setTitle("Gender Role Selection")
+  .setDescription(
+    "Select your gender below to receive your role.\n\n" +
+    "You can change your role whenever you want."
+  );
+
+// ===============================
+// FIND ROLE
+// ===============================
+
+async function findRole(guild, type) {
+  const roleId = ROLE_IDS[type];
+
+  // Try role ID first
+  if (roleId) {
+    const role = guild.roles.cache.get(roleId);
+
+    if (role) {
+      return role;
+    }
+  }
+
+  // Otherwise search by name
+  const roleName = ROLE_NAMES[type];
+
+  return guild.roles.cache.find(
+    (role) => role.name === roleName
+  ) || null;
+}
+
+// ===============================
+// FIND CHANNEL
+// ===============================
+
+async function findChannel() {
+
+  // If CHANNEL_ID exists, use it
+  if (CHANNEL_ID) {
+    try {
+      const channel = await client.channels.fetch(CHANNEL_ID);
+
+      if (channel && channel.isTextBased()) {
+        return channel;
       }
-    );
+    } catch (error) {
+      console.error("❌ Could not find CHANNEL_ID:", error);
+    }
+  }
 
-  return new ActionRowBuilder().addComponents(menu);
-}
+  // Otherwise search every server
+  for (const guild of client.guilds.cache.values()) {
 
-// ==========================================
-// GENDER EMBED
-// ==========================================
+    const channel = guild.channels.cache.find((ch) => {
 
-function createGenderEmbed() {
-  return new EmbedBuilder()
-    .setColor("#5865F2")
-    .setTitle("🔒 Gender Selection")
-    .setDescription(
-      "Please select your gender from the menu below.\n\n" +
+      if (!ch.isTextBased()) {
+        return false;
+      }
 
-      "**Your selection is private.**\n" +
-      "Only you will see the confirmation from the bot.\n\n" +
+      const name = (ch.name || "").toLowerCase();
 
-      "You can change your selection at any time.\n\n" +
-
-      "🏠 **Gender-Based Access:**\n" +
-      "Selecting the role that matches your gender " +
-      "will give you access to the appropriate private " +
-      "channel or dorm."
-    )
-    .setFooter({
-      text: "Your selected role will be updated automatically."
+      return (
+        name.includes("role") ||
+        name.includes("gender")
+      );
     });
+
+    if (channel) {
+      return channel;
+    }
+  }
+
+  return null;
 }
 
-// ==========================================
-// BOT READY
-// ==========================================
+// ===============================
+// SEND PANEL
+// ===============================
 
-client.once("clientReady", async readyClient => {
+async function sendGenderPanel() {
 
-  console.log("==========================================");
-  console.log("🎉 DISCORD LOGIN SUCCESSFUL!");
-  console.log(`🤖 Logged in as: ${readyClient.user.tag}`);
-  console.log(`🆔 Bot ID: ${readyClient.user.id}`);
-  console.log(`🏠 Servers: ${readyClient.guilds.cache.size}`);
-  console.log("==========================================");
+  const channel = await findChannel();
+
+  if (!channel) {
+    console.log("❌ Gender role channel not found!");
+    console.log("Set CHANNEL_ID in Render if necessary.");
+    return;
+  }
 
   try {
 
-    // ======================================
-    // FIND CHANNEL
-    // ======================================
-
-    console.log(
-      `🔎 Looking for gender channel: ${GENDER_CHANNEL_ID}`
-    );
-
-    const channel = await client.channels.fetch(
-      GENDER_CHANNEL_ID
-    );
-
-    if (!channel) {
-      console.error("❌ Gender channel was not found!");
-      return;
-    }
-
-    console.log(`✅ Channel found: ${channel.name}`);
-
-    // ======================================
-    // CHECK SEND PERMISSION
-    // ======================================
-
-    if (!channel.isTextBased()) {
-      console.error("❌ Gender channel is not a text channel!");
-      return;
-    }
-
-    console.log("📤 Sending gender selection panel...");
-
-    // ======================================
-    // SEND PANEL
-    // ======================================
-
-    const message = await channel.send({
-      embeds: [
-        createGenderEmbed()
-      ],
-      components: [
-        createGenderMenu()
-      ]
+    // Check recent messages for an existing panel
+    const messages = await channel.messages.fetch({
+      limit: 50,
     });
 
-    console.log("==========================================");
-    console.log("✅ GENDER SELECTION PANEL POSTED!");
+    const existingPanel = messages.find((message) => {
+
+      if (message.author.id !== client.user.id) {
+        return false;
+      }
+
+      return message.components.some((component) =>
+        component.components?.some(
+          (item) => item.customId === SELECT_MENU_ID
+        )
+      );
+    });
+
+    if (existingPanel) {
+      console.log("✅ Gender selection panel already exists.");
+      console.log(`🆔 Message ID: ${existingPanel.id}`);
+      return;
+    }
+
+    const message = await channel.send({
+      embeds: [embed],
+      components: [row],
+    });
+
+    console.log("📥 GENDER SELECTION PANEL POSTED!");
     console.log(`🆔 Message ID: ${message.id}`);
-    console.log(`📍 Channel: ${channel.name}`);
-    console.log("==========================================");
+    console.log(`📌 Channel: ${channel.name}`);
 
   } catch (error) {
 
-    console.error("==========================================");
-    console.error("❌ FAILED TO POST GENDER PANEL");
-    console.error("==========================================");
-
+    console.error("❌ Failed to send gender panel:");
     console.error(error);
+
   }
+}
+
+// ===============================
+// BOT READY
+// ===============================
+
+client.once("clientReady", async () => {
+
+  console.log("======================================");
+  console.log("🚀 GENDER ROLE BOT STARTING");
+  console.log("======================================");
+
+  console.log(`🤖 Logged in as: ${client.user.tag}`);
+  console.log(`🆔 Bot ID: ${client.user.id}`);
+  console.log(`🏠 Servers: ${client.guilds.cache.size}`);
+
+  for (const guild of client.guilds.cache.values()) {
+
+    console.log(
+      `📌 Server: ${guild.name} (${guild.id})`
+    );
+
+  }
+
+  await sendGenderPanel();
+
 });
 
-// ==========================================
-// GENDER SELECTION
-// ==========================================
+// ===============================
+// INTERACTIONS
+// ===============================
 
-client.on("interactionCreate", async interaction => {
+client.on("interactionCreate", async (interaction) => {
 
   if (!interaction.isStringSelectMenu()) {
     return;
   }
 
-  if (interaction.customId !== "gender_select") {
+  if (interaction.customId !== SELECT_MENU_ID) {
     return;
   }
 
+  // ==========================================
+  // IMPORTANT:
+  // ACKNOWLEDGE THE INTERACTION ONLY ONCE
+  // ==========================================
+
   try {
 
-    const selectedGender = interaction.values[0];
+    await interaction.deferUpdate();
 
-    console.log(
-      `👤 ${interaction.user.tag} selected: ${selectedGender}`
+  } catch (error) {
+
+    console.error(
+      "❌ Could not acknowledge interaction:",
+      error
     );
 
-    const member = interaction.member;
+    return;
+  }
 
-    const selectedRoleId =
-      GENDER_ROLES[selectedGender];
+  // ==========================================
+  // HANDLE ROLE
+  // ==========================================
 
-    // ======================================
-    // CHECK CONFIGURATION
-    // ======================================
+  try {
 
-    if (!selectedRoleId) {
+    const selected = interaction.values[0];
 
-      return interaction.reply({
-        content:
-          "❌ This gender option is not configured.",
-        flags: MessageFlags.Ephemeral
-      });
+    if (!ROLE_NAMES[selected]) {
 
+      await interaction.followUp({
+        content: "❌ Invalid gender selection.",
+        ephemeral: true,
+      }).catch(() => {});
+
+      return;
     }
 
-    // ======================================
-    // FIND ROLE
-    // ======================================
+    const guild = interaction.guild;
+    const member = interaction.member;
+
+    if (!guild || !member) {
+
+      await interaction.followUp({
+        content: "❌ This can only be used inside a server.",
+        ephemeral: true,
+      }).catch(() => {});
+
+      return;
+    }
+
+    console.log(
+      `👤 ${member.user.tag} selected: ${selected}`
+    );
+
+    // ==========================================
+    // GET BOT MEMBER
+    // ==========================================
+
+    const botMember =
+      guild.members.me ||
+      await guild.members.fetchMe();
+
+    // ==========================================
+    // CHECK MANAGE ROLES
+    // ==========================================
+
+    if (!botMember.permissions.has("ManageRoles")) {
+
+      console.error(
+        "❌ Bot does not have Manage Roles permission!"
+      );
+
+      await interaction.followUp({
+        content:
+          "❌ I need the **Manage Roles** permission.",
+        ephemeral: true,
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==========================================
+    // GET SELECTED ROLE
+    // ==========================================
 
     const selectedRole =
-      interaction.guild.roles.cache.get(
-        selectedRoleId
-      );
+      await findRole(guild, selected);
 
     if (!selectedRole) {
 
       console.error(
-        `❌ Role not found: ${selectedRoleId}`
+        `❌ Role not found: ${ROLE_NAMES[selected]}`
       );
 
-      return interaction.reply({
+      await interaction.followUp({
         content:
-          "❌ I couldn't find that gender role.",
-        flags: MessageFlags.Ephemeral
-      });
+          `❌ Role **${ROLE_NAMES[selected]}** was not found.`,
+        ephemeral: true,
+      }).catch(() => {});
 
+      return;
     }
 
-    console.log(
-      `🔎 Selected role: ${selectedRole.name}`
-    );
+    // ==========================================
+    // CHECK ROLE HIERARCHY
+    // ==========================================
 
-    // ======================================
+    if (
+      selectedRole.position >=
+      botMember.roles.highest.position
+    ) {
+
+      console.error(
+        `❌ Cannot manage role: ${selectedRole.name}`
+      );
+
+      await interaction.followUp({
+        content:
+          `❌ I cannot manage **${selectedRole.name}**.\n\n` +
+          `Move the bot's role **above** the gender roles in Server Settings → Roles.`,
+        ephemeral: true,
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==========================================
     // REMOVE OLD GENDER ROLES
-    // ======================================
+    // ==========================================
 
-    for (const roleId of ALL_GENDER_ROLE_IDS) {
+    for (const type of Object.keys(ROLE_NAMES)) {
+
+      if (type === selected) {
+        continue;
+      }
+
+      const oldRole =
+        await findRole(guild, type);
+
+      if (!oldRole) {
+        continue;
+      }
 
       if (
-        roleId !== selectedRoleId &&
-        member.roles.cache.has(roleId)
+        member.roles.cache.has(oldRole.id) &&
+        oldRole.position <
+          botMember.roles.highest.position
       ) {
 
-        console.log(
-          `🗑️ Removing old role: ${roleId}`
-        );
+        try {
 
-        await member.roles.remove(
-          roleId,
-          "Gender role changed"
-        );
+          await member.roles.remove(
+            oldRole,
+            "Gender role changed"
+          );
+
+          console.log(
+            `🗑️ Removed old role: ${oldRole.name}`
+          );
+
+        } catch (error) {
+
+          console.error(
+            `❌ Could not remove ${oldRole.name}:`,
+            error
+          );
+
+        }
       }
     }
 
-    // ======================================
+    // ==========================================
     // ADD NEW ROLE
-    // ======================================
+    // ==========================================
 
-    if (!member.roles.cache.has(selectedRoleId)) {
-
-      console.log(
-        `➕ Adding role: ${selectedRole.name}`
-      );
+    if (!member.roles.cache.has(selectedRole.id)) {
 
       await member.roles.add(
         selectedRole,
         "Gender role selected"
       );
+
+      console.log(
+        `➕ Added role: ${selectedRole.name}`
+      );
+
+    } else {
+
+      console.log(
+        `ℹ️ User already has: ${selectedRole.name}`
+      );
+
     }
 
-    // ======================================
-    // PRIVATE CONFIRMATION
-    // ======================================
+    // ==========================================
+    // CONFIRMATION
+    // ==========================================
 
-    await interaction.reply({
+    await interaction.followUp({
       content:
-        `✅ Your gender role is now **${selectedRole.name}**.\n\n` +
-        `🔒 This confirmation is private and only visible to you.`,
-      flags: MessageFlags.Ephemeral
-    });
+        `✅ Your gender role is now **${selectedRole.name}**.`,
+      ephemeral: true,
+    }).catch(() => {});
 
     console.log(
-      `✅ Role assigned successfully to ${interaction.user.tag}`
+      `✅ ${member.user.tag} successfully received ${selectedRole.name}`
     );
 
   } catch (error) {
 
-    console.error("❌ Gender selection error:");
+    console.error(
+      "❌ Gender selection error:"
+    );
+
     console.error(error);
 
-    if (!interaction.replied && !interaction.deferred) {
+    await interaction.followUp({
+      content:
+        "❌ Something went wrong while changing your role.",
+      ephemeral: true,
+    }).catch(() => {});
 
-      await interaction.reply({
-        content:
-          "❌ I couldn't update your gender role. Please contact staff.",
-        flags: MessageFlags.Ephemeral
-      });
-
-    }
   }
+
 });
 
-// ==========================================
+// ===============================
+// DISCORD ERRORS
+// ===============================
+
+client.on("error", (error) => {
+
+  console.error(
+    "❌ Discord client error:",
+    error
+  );
+
+});
+
+process.on("unhandledRejection", (error) => {
+
+  console.error(
+    "❌ Unhandled promise rejection:",
+    error
+  );
+
+});
+
+process.on("uncaughtException", (error) => {
+
+  console.error(
+    "❌ Uncaught exception:",
+    error
+  );
+
+});
+
+// ===============================
 // LOGIN
-// ==========================================
+// ===============================
 
-console.log("🔐 Attempting Discord login...");
-console.log("🌐 Connecting to Discord Gateway...");
+console.log("🔑 Attempting Discord login...");
 
-client.login(TOKEN)
-  .then(() => {
-    console.log("✅ Discord login request accepted.");
-  })
-  .catch(error => {
+client.login(TOKEN).catch((error) => {
 
-    console.error("==========================================");
-    console.error("❌ DISCORD LOGIN FAILED");
-    console.error("==========================================");
+  console.error("❌ Discord login failed!");
+  console.error(error);
 
-    console.error(error);
+  process.exit(1);
 
-    process.exit(1);
-  });
-
-// ==========================================
-// LOGIN TIMEOUT
-// ==========================================
-
-setTimeout(() => {
-
-  if (!client.isReady()) {
-
-    console.error("==========================================");
-    console.error("❌ DISCORD LOGIN TIMEOUT");
-    console.error("==========================================");
-
-    console.error(
-      "The bot did not receive the Discord READY event."
-    );
-
-    console.error(
-      "Check your DISCORD_TOKEN and Discord Developer Portal."
-    );
-
-    process.exit(1);
-  }
-
-}, 60000);
+});
