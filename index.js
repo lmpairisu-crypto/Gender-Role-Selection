@@ -149,7 +149,7 @@ function createGenderMenu() {
   return new EmbedBuilder()
     .setColor("#5865F2")
     .setAuthor({
-      name: "Pinoy Big Sister Landlady",
+      name: "Pinoy Big Sister",
       url: process.env.GIF_URL
     })
     .setTitle("🎎 Gender Role Selection")
@@ -157,7 +157,7 @@ function createGenderMenu() {
       "Select your gender below to receive your role.\n\n" +
       "Your selection is private 🔒.\n\n" +
       "You can change your selection whanever you want.\n\n" +
-      "---\n\n" +
+      "────────────────────────────────────────────────────────\n\n" +
       "🏠 **Gender-Based Access:**\n" +
       "Selecting a role will give you access to the appropriate private channel or dorm."
     )
