@@ -72,6 +72,28 @@ const client = new Client({
   ],
 });
 
+client.once("ready", async () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+
+    if (!channel) {
+      console.error("❌ Channel not found!");
+      return;
+    }
+
+    await channel.send({
+      embeds: [createEmbed()],
+      components: [createGenderMenu()],
+    });
+
+    console.log("✅ Gender selection embed sent!");
+  } catch (error) {
+    console.error("❌ Failed to send embed:", error);
+  }
+});
+
 // ==================================================
 // MENU ID
 // ==================================================
