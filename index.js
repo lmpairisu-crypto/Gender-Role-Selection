@@ -81,8 +81,7 @@ server.listen(PORT, "0.0.0.0", () => {
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.Guilds
   ]
 });
 
