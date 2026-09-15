@@ -613,9 +613,9 @@ client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
+    console.log(`📢 Fetching channel: ${CHANNEL_ID}`);
 
-    console.log(`📢 Channel ID: ${CHANNEL_ID}`);
+    const channel = await client.channels.fetch(CHANNEL_ID);
 
     if (!channel) {
       console.error("❌ Channel not found!");
@@ -638,6 +638,20 @@ client.once("ready", async () => {
     console.error(error);
   }
 });
+
+client.on("debug", (message) => {
+  console.log(`🔧 Discord Debug: ${message}`);
+});
+
+client.on("warn", (message) => {
+  console.warn(`⚠️ Discord Warning: ${message}`);
+});
+
+client.on("error", (error) => {
+  console.error("❌ Discord Client Error:");
+  console.error(error);
+});
+
 console.log("🔑 Attempting Discord login...");
 
 client.login(TOKEN).catch((error) => {
