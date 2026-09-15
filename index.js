@@ -84,9 +84,12 @@ client.once("ready", async () => {
     }
 
     await channel.send({
-      embeds: [createEmbed()],
-      components: [createGenderMenu()],
-    });
+  embeds: [
+    createMainEmbed(),
+    createAccessEmbed()
+  ],
+  components: [createGenderMenu()],
+});
 
     console.log("✅ Gender selection embed sent!");
   } catch (error) {
@@ -166,7 +169,7 @@ function createGenderMenu() {
 // ==================================================
 // EMBED
 // ==================================================
-function createEmbed() {
+function createMainEmbed() {
   return new EmbedBuilder()
     .setColor("#5865F2")
     .setAuthor({
@@ -177,8 +180,16 @@ function createEmbed() {
     .setDescription(
       "Select your gender below to receive your role.\n\n" +
       "Your selection is private 🔒.\n\n" +
-      "You can change your selection whenever you want.\n\n" +
-      "🏠 **Gender-Based Access:**\n" +
+      "You can change your selection whenever you want."
+    );
+}
+
+function createAccessEmbed() {
+  return new EmbedBuilder()
+    .setColor("#5865F2")
+    .setDescription(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "🏠 **Gender-Based Access**\n\n" +
       "Selecting a role will give you access to the appropriate private channel or dorm."
     )
     .setThumbnail(process.env.GIF_URL)
