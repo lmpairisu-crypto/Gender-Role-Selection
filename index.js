@@ -25,7 +25,7 @@ const GENDER_CHANNEL_ID = "1539643480714903602";
 const GENDER_ROLES = {
   male: "1514568565016232158",
   female: "1514569124305571840",
-  "lgbt+": "1514569385841528833",
+  lgbt: "1514569385841528833",
   prefer_not: "1548936806794526741"
 };
 
@@ -109,7 +109,7 @@ function createGenderMenu() {
       {
         label: "🏳️‍🌈 LGBT",
         description: "Select the LGBT+ role",
-        value: "lgbt+"
+        value: "lgbt"
       },
       {
         label: "🙊 Prefer not to say",
@@ -605,7 +605,7 @@ client.on(
 // ==========================================
 
 client.on("debug", info => {
-  console.log(`🔍 DISCORD DEBUG: ${info}`);
+  // Do not print Discord debug information because it may contain sensitive data.
 });
 
 client.on("shardConnecting", shardId => {
