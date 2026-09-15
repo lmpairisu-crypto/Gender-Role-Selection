@@ -492,432 +492,257 @@ client.once("ready", async () => {
 // INTERACTIONS
 // ==================================================
 
-client.on(
-  "interactionCreate",
-  async (interaction) => {
+client.on("interactionCreate", async (interaction) => {
 
-    if (!interaction.isStringSelectMenu()) {
-      return;
-    }
+  if (!interaction.isStringSelectMenu()) return;
 
-    if (
-      interaction.customId !==
-      SELECT_MENU_ID
-    ) {
-      return;
-    }
+  if (interaction.customId !== SELECT_MENU_ID) return;
 
-    // ==================================================
-    // GET SELECTION
-    // ==================================================
+  // ==================================================
+  // ACKNOWLEDGE IMMEDIATELY
+  // ==================================================
 
-    const rawValue =
-      interaction.values?.[0];
+  try {
+    await interaction.deferReply({
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error("❌ Could not acknowledge interaction:");
+    console.error(error);
+    return;
+  }
 
-    console.log("======================================");
-    console.log("📥 GENDER SELECTION");
-    console.log(
-      `👤 User: ${interaction.user.tag}`
-    );
-    console.log(
-      `🔎 Raw value: ${rawValue}`
-    );
-    console.log("======================================");
+  // ==================================================
+  // GET SELECTION
+  // ==================================================
 
-    // ==================================================
-    // CONVERT VALUE
-    // ==================================================
+  const rawValue = interaction.values?.[0];
 
-    const selected =
-      VALUE_ALIASES[rawValue];
+  console.log("======================================");
+  console.log("📥 GENDER SELECTION");
+  console.log(`👤 User: ${interaction.user.tag}`);
+  console.log(`🔎 Raw value: ${rawValue}`);
+  console.log("======================================");
 
-    if (!selected) {
+  const selected = VALUE_ALIASES[rawValue];
 
-      console.error(
-        `❌ Unknown selection: ${rawValue}`
-      );
+  if (!selected) {
+    await interaction.editReply({
+      content: "❌ Invalid gender selection. Please use the newest menu.",
+    }).catch(() => {});
 
-      await interaction.reply({
-        content:
-          "❌ Invalid gender selection. Please use the newest menu.",
-        ephemeral: true,
-      }).catch(() => {});
+    return;
+  }
 
-      return;
-    }
+  console.log(`✅ Converted selection: ${selected}`);
 
-    console.log(
-      `✅ Converted selection: ${selected}`
-    );
+  // ==================================================
+  // SERVER
+  // ==================================================
 
-    // ==================================================
-    // ACKNOWLEDGE
-    // ==================================================
+  const guild = interaction.guild;
 
-    try {
-      await interaction.deferReply({
-        ephemeral: true,
-      });
+  if (!guild) {
+    await interaction.editReply({
+      content: "❌ This can only be used inside a server.",
+    }).catch(() => {});
 
-    } catch (error) {
+    return;
+  }
 
-      console.error(
-        "❌ Could not acknowledge interaction:"
-      );
+  // ==================================================
+  // MEMBER
+  // ==================================================
 
-      console.error(error);
+  let member;
 
-      return;
-    }
+  try {
+    member = await guild.members.fetch(interaction.user.id);
+  } catch (error) {
+    console.error("❌ Could not fetch member:");
+    console.error(error);
 
-    // ==================================================
-    // SERVER
-    // ==================================================
+    await interaction.editReply({
+      content: "❌ Could not find your server member information.",
+    }).catch(() => {});
 
-    const guild =
-      interaction.guild;
+    return;
+  }
 
-    if (!guild) {
+  // ==================================================
+  // BOT MEMBER
+  // ==================================================
 
-      await interaction.editReply({
-        content:
-          "❌ This can only be used inside a server.",
-      }).catch(() => {});
+  let botMember;
 
-      return;
-    }
+  try {
+    botMember =
+      guild.members.me ||
+      await guild.members.fetchMe();
+  } catch (error) {
+    console.error("❌ Could not fetch bot member:");
+    console.error(error);
 
-    // ==================================================
-    // MEMBER
-    // ==================================================
+    await interaction.editReply({
+      content: "❌ I could not check my server permissions.",
+    }).catch(() => {});
 
-    let member;
+    return;
+  }
 
-    try {
+  // ==================================================
+  // MANAGE ROLES
+  // ==================================================
 
-      member =
-        await guild.members.fetch(
-          interaction.user.id
-        );
+  if (!botMember.permissions.has("ManageRoles")) {
+    await interaction.editReply({
+      content: "❌ I need the **Manage Roles** permission.",
+    }).catch(() => {});
 
-    } catch (error) {
+    return;
+  }
 
-      console.error(
-        "❌ Could not fetch member:"
-      );
+  // ==================================================
+  // SELECTED ROLE
+  // ==================================================
 
-      console.error(error);
+  const selectedRole = findRole(guild, selected);
 
-      await interaction.editReply({
-        content:
-          "❌ Could not find your server member information.",
-      }).catch(() => {});
+  if (!selectedRole) {
+    await interaction.editReply({
+      content:
+        "❌ The selected role was not found. Check your Render role IDs.",
+    }).catch(() => {});
 
-      return;
-    }
+    return;
+  }
 
-    // ==================================================
-    // BOT MEMBER
-    // ==================================================
+  console.log(
+    `🎯 Selected role: ${selectedRole.name} (${selectedRole.id})`
+  );
 
-    let botMember;
+  // ==================================================
+  // ROLE HIERARCHY
+  // ==================================================
 
-    try {
+  if (
+    selectedRole.position >=
+    botMember.roles.highest.position
+  ) {
+    await interaction.editReply({
+      content:
+        `❌ I cannot manage **${selectedRole.name}**.\n\n` +
+        `Move my bot role **above the gender roles** in Server Settings → Roles.`,
+    }).catch(() => {});
 
-      botMember =
-        guild.members.me ||
-        await guild.members.fetchMe();
+    return;
+  }
 
-    } catch (error) {
+  // ==================================================
+  // REMOVE OLD GENDER ROLES
+  // ==================================================
 
-      console.error(
-        "❌ Could not fetch bot member:"
-      );
+  const removedRoles = [];
 
-      console.error(error);
+  for (const type of Object.keys(ROLE_IDS)) {
 
-      await interaction.editReply({
-        content:
-          "❌ I could not check my server permissions.",
-      }).catch(() => {});
+    if (type === selected) continue;
 
-      return;
-    }
+    const oldRole = findRole(guild, type);
 
-    // ==================================================
-    // MANAGE ROLES
-    // ==================================================
+    if (!oldRole) continue;
 
-    if (
-      !botMember.permissions.has(
-        "ManageRoles"
-      )
-    ) {
-
-      console.error(
-        "❌ Bot does not have Manage Roles permission."
-      );
-
-      await interaction.editReply({
-        content:
-          "❌ I need the **Manage Roles** permission.",
-      }).catch(() => {});
-
-      return;
-    }
-
-    // ==================================================
-    // SELECTED ROLE
-    // ==================================================
-
-    const selectedRole =
-      findRole(
-        guild,
-        selected
-      );
-
-    if (!selectedRole) {
-
-      await interaction.editReply({
-        content:
-          "❌ The selected role was not found. Check your Render role IDs.",
-      }).catch(() => {});
-
-      return;
-    }
-
-    console.log(
-      `🎯 Selected role: ${selectedRole.name} (${selectedRole.id})`
-    );
-
-    // ==================================================
-    // ROLE HIERARCHY
-    // ==================================================
+    if (!member.roles.cache.has(oldRole.id)) continue;
 
     if (
-      selectedRole.position >=
+      oldRole.position >=
       botMember.roles.highest.position
     ) {
-
-      console.error(
-        `❌ Bot cannot manage ${selectedRole.name}`
+      console.log(
+        `⚠️ Cannot remove role above bot: ${oldRole.name}`
       );
-
-      await interaction.editReply({
-        content:
-          `❌ I cannot manage **${selectedRole.name}**.\n\n` +
-          `Please move my bot role **above the gender roles** in Server Settings → Roles.`,
-      }).catch(() => {});
-
-      return;
+      continue;
     }
-
-    // ==================================================
-    // REMOVE OLD GENDER ROLES
-    // ==================================================
-
-    const removedRoles = [];
-
-    for (
-      const type of Object.keys(
-        ROLE_IDS
-      )
-    ) {
-
-      if (type === selected) {
-        continue;
-      }
-
-      const oldRole =
-        findRole(
-          guild,
-          type
-        );
-
-      if (!oldRole) {
-        continue;
-      }
-
-      if (
-        !member.roles.cache.has(
-          oldRole.id
-        )
-      ) {
-        continue;
-      }
-
-      // Check hierarchy
-      if (
-        oldRole.position >=
-        botMember.roles.highest.position
-      ) {
-
-        console.log(
-          `⚠️ Cannot remove role above bot: ${oldRole.name}`
-        );
-
-        continue;
-      }
-
-      try {
-
-        await member.roles.remove(
-          oldRole,
-          "Gender role changed"
-        );
-
-        removedRoles.push(
-          oldRole
-        );
-
-        console.log(
-          `🗑️ Removed old role: ${oldRole.name}`
-        );
-
-      } catch (error) {
-
-        console.error(
-          `❌ Could not remove ${oldRole.name}:`
-        );
-
-        console.error(error);
-      }
-    }
-
-    // ==================================================
-    // ADD SELECTED ROLE
-    // ==================================================
 
     try {
-
-      if (
-        !member.roles.cache.has(
-          selectedRole.id
-        )
-      ) {
-
-        await member.roles.add(
-          selectedRole,
-          "Gender role selected"
-        );
-
-        console.log(
-          `➕ Added role: ${selectedRole.name}`
-        );
-
-      } else {
-
-        console.log(
-          `ℹ️ User already has: ${selectedRole.name}`
-        );
-      }
-
-    } catch (error) {
-
-      console.error(
-        "❌ Could not add selected role:"
+      await member.roles.remove(
+        oldRole,
+        "Gender role changed"
       );
 
+      removedRoles.push(oldRole);
+
+      console.log(
+        `🗑️ Removed old role: ${oldRole.name}`
+      );
+
+    } catch (error) {
+      console.error(
+        `❌ Could not remove ${oldRole.name}:`
+      );
       console.error(error);
+    }
+  }
 
-      await interaction.editReply({
-        content:
-          "❌ I couldn't give you the role. Check **Manage Roles** and make sure the bot role is above the gender roles.",
-      }).catch(() => {});
+  // ==================================================
+  // ADD SELECTED ROLE
+  // ==================================================
 
-      return;
+  try {
+
+    if (!member.roles.cache.has(selectedRole.id)) {
+
+      await member.roles.add(
+        selectedRole,
+        "Gender role selected"
+      );
+
+      console.log(
+        `➕ Added role: ${selectedRole.name}`
+      );
+
+    } else {
+
+      console.log(
+        `ℹ️ User already has: ${selectedRole.name}`
+      );
     }
 
-    // ==================================================
-    // SEND DISCORD LOG
-    // ==================================================
+  } catch (error) {
 
-    await sendLog({
-      member,
-      selectedRole,
-      removedRoles,
-    });
-
-    // ==================================================
-    // CONFIRMATION
-    // ==================================================
+    console.error("❌ Could not add selected role:");
+    console.error(error);
 
     await interaction.editReply({
       content:
-        `✅ Your gender role is now **${selectedRole.name}**.`,
+        "❌ I couldn't give you the role. Check **Manage Roles** and make sure the bot role is above the gender roles.",
     }).catch(() => {});
 
-    console.log("======================================");
-
-    console.log(
-      `✅ ${member.user.tag} received ${selectedRole.name}`
-    );
-
-    console.log("======================================");
+    return;
   }
-);
 
-// ==================================================
-// DEBUG / ERRORS
-// ==================================================
+  // ==================================================
+  // SEND DISCORD LOG
+  // ==================================================
 
-client.on("debug", (message) => {
+  await sendLog({
+    member,
+    selectedRole,
+    removedRoles,
+  });
+
+  // ==================================================
+  // CONFIRMATION
+  // ==================================================
+
+  await interaction.editReply({
+    content:
+      `✅ Your gender role is now **${selectedRole.name}**.`,
+  }).catch(() => {});
+
+  console.log("======================================");
   console.log(
-    `🔧 Discord Debug: ${message}`
+    `✅ ${member.user.tag} received ${selectedRole.name}`
   );
-});
-
-client.on("warn", (message) => {
-  console.warn(
-    `⚠️ Discord Warning: ${message}`
-  );
-});
-
-client.on("error", (error) => {
-  console.error(
-    "❌ Discord Client Error:"
-  );
-
-  console.error(error);
-});
-
-process.on(
-  "unhandledRejection",
-  (error) => {
-    console.error(
-      "❌ Unhandled Promise Rejection:"
-    );
-
-    console.error(error);
-  }
-);
-
-process.on(
-  "uncaughtException",
-  (error) => {
-    console.error(
-      "❌ Uncaught Exception:"
-    );
-
-    console.error(error);
-  }
-);
-
-// ==================================================
-// LOGIN
-// ==================================================
-
-console.log(
-  "🔑 Attempting Discord login..."
-);
-
-client.login(TOKEN).catch((error) => {
-
-  console.error(
-    "❌ Discord login failed!"
-  );
-
-  console.error(error);
-
-  process.exit(1);
+  console.log("======================================");
 });
