@@ -99,7 +99,7 @@ const GENDER_OPTIONS = {
 
   prefer_not_to_say: {
     label: "Prefer not to say",
-    emoji: "🙈",
+    emoji: "🤐",
     description: "Don't disclose your gender",
   },
 };
