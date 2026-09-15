@@ -609,6 +609,35 @@ process.on("uncaughtException", (error) => {
 // LOGIN
 // ==================================================
 
+client.once("ready", async () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+
+    console.log(`📢 Channel ID: ${CHANNEL_ID}`);
+
+    if (!channel) {
+      console.error("❌ Channel not found!");
+      return;
+    }
+
+    console.log(`✅ Channel found: ${channel.name}`);
+
+    await channel.send({
+      embeds: [
+        createMainEmbed(),
+        createAccessEmbed()
+      ],
+      components: [createGenderMenu()],
+    });
+
+    console.log("✅ Gender selection embed sent!");
+  } catch (error) {
+    console.error("❌ Failed to send embed:");
+    console.error(error);
+  }
+});
 console.log("🔑 Attempting Discord login...");
 
 client.login(TOKEN).catch((error) => {
