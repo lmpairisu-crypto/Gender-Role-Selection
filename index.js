@@ -67,7 +67,7 @@ console.log("==========================================");
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds, 
+    GatewayIntentBits.Guilds,
   ],
 });
 
@@ -77,25 +77,36 @@ client.once("ready", async () => {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
 
+    console.log(`📢 Channel ID: ${CHANNEL_ID}`);
+
     if (!channel) {
       console.error("❌ Channel not found!");
       return;
     }
 
-    await channel.send({
-  embeds: [
-    createMainEmbed(),
-    createAccessEmbed()
-  ],
-  components: [createGenderMenu()],
-});
+    console.log(`✅ Channel found: ${channel.name}`);
 
-    console.log("✅ Gender selection embed sent!");
+    await channel.send({
+      embeds: [
+        createMainEmbed(),
+        createAccessEmbed()
+      ],
+      components: [createGenderMenu()],
+    });
+
+    console.log("✅ Gender selection embeds sent!");
   } catch (error) {
-    console.error("❌ Failed to send embed:", error);
+    console.error("❌ Failed to send embed:");
+    console.error(error);
   }
 });
 
+console.log("🔑 Attempting Discord login...");
+
+client.login(TOKEN).catch((error) => {
+  console.error("❌ Discord login failed!");
+  console.error(error);
+});
 // ==================================================
 // MENU ID
 // ==================================================
