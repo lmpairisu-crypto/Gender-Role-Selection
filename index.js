@@ -174,7 +174,7 @@ client.on("warn", warning => {
 // BOT READY
 // ==========================================
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
 
   console.log("==========================================");
   console.log(`🤖 Logged in as ${client.user.tag}`);
@@ -551,7 +551,10 @@ client.on(
           `✅ Your gender role is now **${selectedRole.name}**.\n\n` +
           `🔒 This confirmation is private and only visible to you.`,
 
-        ephemeral: true
+        await interaction.reply({
+  content: "...",
+  flags: 64
+});
 
       });
 
