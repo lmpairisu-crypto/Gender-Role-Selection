@@ -141,18 +141,19 @@ function createGenderMenu() {
 // EMBED
 // ==================================================
 
-function createEmbed() {
+ function createEmbed() {
   return new EmbedBuilder()
-    .setTitle("Gender Role Selection")
+    .setColor("#5865F2")
+    .setTitle("🎎 Gender Role Selection")
     .setDescription(
-      "Select your gender below to receive your role.\n\n" +
-      "Your selection is private.\n" +
+      "<a:Avisala:1542448826265243660> Select your gender below to receive your role.\n\n" +
+      "Your selection is private 🔒.\n" +
       "You can change your selection whenever you want.\n\n" +
       "🏠 **Gender-Based Access:**\n" +
       "Selecting a role will give you access to the appropriate private channel or dorm."
-    );
-}
-
+    )
+    .setImage(process.env.GIF_URL);
+ }
 // ==================================================
 // FIND ROLE USING RENDER VARIABLE
 // ==================================================
