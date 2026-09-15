@@ -214,35 +214,42 @@ async function findChannel() {
 // ==================================================
 
 async function sendGenderPanel() {
-  const channel = await findChannel();
+  console.log("======================================");
+  console.log("📨 PREPARING GENDER PANEL");
+  console.log("======================================");
+
+  if (!CHANNEL_ID) {
+    console.error("❌ CHANNEL_ID is missing!");
+    return;
+  }
+
+  console.log(`🔎 CHANNEL_ID: ${CHANNEL_ID}`);
+
+  let channel;
+
+  try {
+    channel = await client.channels.fetch(CHANNEL_ID);
+  } catch (error) {
+    console.error("❌ Could not fetch CHANNEL_ID:");
+    console.error(error);
+    return;
+  }
 
   if (!channel) {
+    console.error("❌ Channel does not exist!");
+    return;
+  }
+
+  console.log(`📌 Channel name: ${channel.name}`);
+  console.log(`🆔 Channel ID: ${channel.id}`);
+  console.log(`📂 Channel type: ${channel.type}`);
+
+  if (!channel.isTextBased()) {
+    console.error("❌ This is not a text-based channel!");
     return;
   }
 
   try {
-    const messages = await channel.messages.fetch({
-      limit: 50,
-    });
-
-    const existingPanel = messages.find((message) => {
-      if (message.author.id !== client.user.id) {
-        return false;
-      }
-
-      return message.components.some((component) =>
-        component.components?.some(
-          (item) => item.customId === SELECT_MENU_ID
-        )
-      );
-    });
-
-    if (existingPanel) {
-      console.log("✅ Gender selection panel already exists.");
-      console.log(`🆔 Message ID: ${existingPanel.id}`);
-      return;
-    }
-
     const row = new ActionRowBuilder().addComponents(
       createGenderMenu()
     );
@@ -252,14 +259,20 @@ async function sendGenderPanel() {
       components: [row],
     });
 
-    console.log("📥 NEW GENDER PANEL POSTED!");
+    console.log("======================================");
+    console.log("✅ GENDER PANEL SENT SUCCESSFULLY!");
     console.log(`🆔 Message ID: ${message.id}`);
     console.log(`📌 Channel: ${channel.name}`);
+    console.log(`🆔 Channel ID: ${channel.id}`);
+    console.log("======================================");
+
   } catch (error) {
-    console.error("❌ Failed to send gender panel:");
+    console.error("======================================");
+    console.error("❌ FAILED TO SEND GENDER PANEL");
     console.error(error);
+    console.error("======================================");
   }
-}
+  }
 
 // ==================================================
 // BOT READY
