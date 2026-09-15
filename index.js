@@ -123,9 +123,9 @@ function createGenderMenu() {
         },
 
         {
-          label: "🏳️‍🌈 LGBT+",
+          label: "🏳️‍🌈 LGBT",
           description: "Select the LGBT+ role",
-          value: "lgbt+"
+          value: "lgbt"
         },
 
         {
