@@ -67,8 +67,7 @@ console.log("==========================================");
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.Guilds, 
   ],
 });
 
@@ -608,7 +607,6 @@ process.on("uncaughtException", (error) => {
 // ==================================================
 // LOGIN
 // ==================================================
-
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
