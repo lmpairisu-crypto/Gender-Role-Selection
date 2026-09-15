@@ -1,4 +1,5 @@
 const express = require("express");
+
 const {
   Client,
   GatewayIntentBits,
@@ -12,6 +13,7 @@ const {
 // ==================================================
 
 const app = express();
+
 const PORT = process.env.PORT || 10000;
 
 app.get("/", (req, res) => {
@@ -27,10 +29,14 @@ app.listen(PORT, "0.0.0.0", () => {
 });
 
 // ==================================================
-// RENDER ENVIRONMENT VARIABLES
+// ENVIRONMENT VARIABLES
 // ==================================================
 
 const TOKEN = process.env.DISCORD_TOKEN;
+
+const CHANNEL_ID = process.env.CHANNEL_ID;
+
+const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
 const ROLE_IDS = {
   male: process.env.MALE_ROLE_ID,
@@ -39,27 +45,60 @@ const ROLE_IDS = {
   prefer_not_to_say: process.env.OTHER_ROLE_ID,
 };
 
-const CHANNEL_ID = process.env.CHANNEL_ID;
+// ==================================================
+// CHECK ENVIRONMENT VARIABLES
+// ==================================================
+
+console.log("======================================");
+console.log("🔧 ENVIRONMENT VARIABLES");
+console.log("======================================");
+
+console.log(
+  `DISCORD_TOKEN: ${TOKEN ? "✅ SET" : "❌ MISSING"}`
+);
+
+console.log(
+  `CHANNEL_ID: ${CHANNEL_ID ? "✅ SET" : "❌ MISSING"}`
+);
+
+console.log(
+  `LOG_CHANNEL_ID: ${
+    LOG_CHANNEL_ID ? "✅ SET" : "⚠️ NOT SET"
+  }`
+);
+
+console.log(
+  `MALE_ROLE_ID: ${
+    ROLE_IDS.male ? "✅ SET" : "❌ MISSING"
+  }`
+);
+
+console.log(
+  `FEMALE_ROLE_ID: ${
+    ROLE_IDS.female ? "✅ SET" : "❌ MISSING"
+  }`
+);
+
+console.log(
+  `LGBT_ROLE_ID: ${
+    ROLE_IDS.lgbt ? "✅ SET" : "❌ MISSING"
+  }`
+);
+
+console.log(
+  `OTHER_ROLE_ID: ${
+    ROLE_IDS.prefer_not_to_say
+      ? "✅ SET"
+      : "❌ MISSING"
+  }`
+);
+
+console.log("======================================");
 
 if (!TOKEN) {
   console.error("❌ DISCORD_TOKEN is missing!");
   process.exit(1);
 }
-
-console.log("🔑 DISCORD_TOKEN exists");
-console.log(`🔐 Token length: ${TOKEN.length}`);
-
-console.log("========== ENVIRONMENT VARIABLES ==========");
-console.log(`MALE_ROLE_ID: ${ROLE_IDS.male ? "✅ SET" : "❌ MISSING"}`);
-console.log(`FEMALE_ROLE_ID: ${ROLE_IDS.female ? "✅ SET" : "❌ MISSING"}`);
-console.log(`LGBT_ROLE_ID: ${ROLE_IDS.lgbt ? "✅ SET" : "❌ MISSING"}`);
-console.log(
-  `OTHER_ROLE_ID: ${
-    ROLE_IDS.prefer_not_to_say ? "✅ SET" : "❌ MISSING"
-  }`
-);
-console.log(`CHANNEL_ID: ${CHANNEL_ID ? "✅ SET" : "❌ MISSING"}`);
-console.log("==========================================");
 
 // ==================================================
 // DISCORD CLIENT
@@ -71,42 +110,6 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
-
-  try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-
-    console.log(`📢 Channel ID: ${CHANNEL_ID}`);
-
-    if (!channel) {
-      console.error("❌ Channel not found!");
-      return;
-    }
-
-    console.log(`✅ Channel found: ${channel.name}`);
-
-    await channel.send({
-      embeds: [
-        createMainEmbed(),
-        createAccessEmbed()
-      ],
-      components: [createGenderMenu()],
-    });
-
-    console.log("✅ Gender selection embeds sent!");
-  } catch (error) {
-    console.error("❌ Failed to send embed:");
-    console.error(error);
-  }
-});
-
-console.log("🔑 Attempting Discord login...");
-
-client.login(TOKEN).catch((error) => {
-  console.error("❌ Discord login failed!");
-  console.error(error);
-});
 // ==================================================
 // MENU ID
 // ==================================================
@@ -144,7 +147,7 @@ const GENDER_OPTIONS = {
 };
 
 // ==================================================
-// ACCEPT OLD VALUES TOO
+// OLD VALUE ALIASES
 // ==================================================
 
 const VALUE_ALIASES = {
@@ -153,13 +156,16 @@ const VALUE_ALIASES = {
   lgbt: "lgbt",
 
   other: "prefer_not_to_say",
+
   prefer_not_to_say: "prefer_not_to_say",
+
   "prefer-not-to-say": "prefer_not_to_say",
+
   prefernotosay: "prefer_not_to_say",
 };
 
 // ==================================================
-// CREATE MENU
+// CREATE GENDER MENU
 // ==================================================
 
 function createGenderMenu() {
@@ -167,53 +173,87 @@ function createGenderMenu() {
     .setCustomId(SELECT_MENU_ID)
     .setPlaceholder("Choose your gender role")
     .addOptions(
-      Object.entries(GENDER_OPTIONS).map(([value, option]) => ({
-        label: option.label,
-        value: value,
-        emoji: option.emoji,
-        description: option.description,
-      }))
+      Object.entries(GENDER_OPTIONS).map(
+        ([value, option]) => ({
+          label: option.label,
+          value: value,
+          emoji: option.emoji,
+          description: option.description,
+        })
+      )
     );
 }
 
 // ==================================================
-// EMBED
+// MAIN EMBED
 // ==================================================
+
 function createMainEmbed() {
   return new EmbedBuilder()
     .setColor("#5865F2")
+
     .setAuthor({
       name: "Pinoy Big Sister",
-      url: process.env.PICTURE_URL
+
+      // Render Environment Variable
+      url: process.env.PICTURE_URL || undefined,
+
+      // Optional author icon
+      iconURL: process.env.PICTURE_URL || undefined,
     })
+
     .setTitle("🎎 Gender Role Selection")
+
     .setDescription(
       "Select your gender below to receive your role.\n\n" +
+
       "Your selection is private 🔒.\n\n" +
+
       "You can change your selection whenever you want."
     );
 }
 
+// ==================================================
+// ACCESS EMBED
+// ==================================================
+
 function createAccessEmbed() {
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor("#5865F2")
+
     .setDescription(
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+
       "🏠 **Gender-Based Access**\n\n" +
+
       "Selecting a role will give you access to the appropriate private channel or dorm."
-    )
-    .setThumbnail(process.env.GIF_URL)
-    .setImage(process.env.DORM_IMAGE_URL);
+    );
+
+  // GIF thumbnail
+  if (process.env.GIF_URL) {
+    embed.setThumbnail(process.env.GIF_URL);
+  }
+
+  // Large dorm image
+  if (process.env.DORM_IMAGE_URL) {
+    embed.setImage(process.env.DORM_IMAGE_URL);
+  }
+
+  return embed;
 }
+
 // ==================================================
-// FIND ROLE USING RENDER VARIABLE
+// FIND ROLE
 // ==================================================
 
 function findRole(guild, type) {
   const roleId = ROLE_IDS[type];
 
   if (!roleId) {
-    console.error(`❌ No Render role ID configured for: ${type}`);
+    console.error(
+      `❌ No role ID configured for: ${type}`
+    );
+
     return null;
   }
 
@@ -221,8 +261,9 @@ function findRole(guild, type) {
 
   if (!role) {
     console.error(
-      `❌ Role ID ${roleId} was not found in ${guild.name}`
+      `❌ Role ${roleId} was not found in ${guild.name}`
     );
+
     return null;
   }
 
@@ -230,43 +271,12 @@ function findRole(guild, type) {
 }
 
 // ==================================================
-// FIND CHANNEL USING RENDER VARIABLE
-// ==================================================
-
-async function findChannel() {
-  if (!CHANNEL_ID) {
-    console.error("❌ CHANNEL_ID is missing in Render.");
-    return null;
-  }
-
-  try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-
-    if (!channel) {
-      console.error("❌ Channel was not found.");
-      return null;
-    }
-
-    if (!channel.isTextBased()) {
-      console.error("❌ CHANNEL_ID is not a text channel.");
-      return null;
-    }
-
-    return channel;
-  } catch (error) {
-    console.error("❌ Failed to fetch channel:");
-    console.error(error);
-    return null;
-  }
-}
-
-// ==================================================
-// SEND PANEL
+// SEND GENDER PANEL
 // ==================================================
 
 async function sendGenderPanel() {
   console.log("======================================");
-  console.log("📨 PREPARING GENDER PANEL");
+  console.log("📨 SENDING GENDER PANEL");
   console.log("======================================");
 
   if (!CHANNEL_ID) {
@@ -274,74 +284,207 @@ async function sendGenderPanel() {
     return;
   }
 
-  console.log(`🔎 CHANNEL_ID: ${CHANNEL_ID}`);
-
-  let channel;
-
   try {
-    channel = await client.channels.fetch(CHANNEL_ID);
-  } catch (error) {
-    console.error("❌ Could not fetch CHANNEL_ID:");
-    console.error(error);
-    return;
-  }
-
-  if (!channel) {
-    console.error("❌ Channel does not exist!");
-    return;
-  }
-
-  console.log(`📌 Channel name: ${channel.name}`);
-  console.log(`🆔 Channel ID: ${channel.id}`);
-  console.log(`📂 Channel type: ${channel.type}`);
-
-  if (!channel.isTextBased()) {
-    console.error("❌ This is not a text-based channel!");
-    return;
-  }
-
-  try {
-    const row = new ActionRowBuilder().addComponents(
-      createGenderMenu()
+    console.log(
+      `🔎 Fetching channel: ${CHANNEL_ID}`
     );
 
+    const channel =
+      await client.channels.fetch(CHANNEL_ID);
+
+    if (!channel) {
+      console.error(
+        "❌ Channel could not be found!"
+      );
+
+      return;
+    }
+
+    console.log(
+      `✅ Channel found: ${channel.name}`
+    );
+
+    console.log(
+      `🆔 Channel ID: ${channel.id}`
+    );
+
+    if (!channel.isTextBased()) {
+      console.error(
+        "❌ CHANNEL_ID is not a text-based channel!"
+      );
+
+      return;
+    }
+
+    const row =
+      new ActionRowBuilder().addComponents(
+        createGenderMenu()
+      );
+
     const message = await channel.send({
-      embeds: [createEmbed()],
-      components: [row],
+      embeds: [
+        createMainEmbed(),
+        createAccessEmbed(),
+      ],
+
+      components: [
+        row,
+      ],
     });
 
     console.log("======================================");
     console.log("✅ GENDER PANEL SENT SUCCESSFULLY!");
-    console.log(`🆔 Message ID: ${message.id}`);
-    console.log(`📌 Channel: ${channel.name}`);
-    console.log(`🆔 Channel ID: ${channel.id}`);
+    console.log(
+      `🆔 Message ID: ${message.id}`
+    );
+    console.log(
+      `📌 Channel: ${channel.name}`
+    );
     console.log("======================================");
 
   } catch (error) {
     console.error("======================================");
     console.error("❌ FAILED TO SEND GENDER PANEL");
-    console.error(error);
     console.error("======================================");
+
+    console.error(error);
   }
+}
+
+// ==================================================
+// SEND DISCORD LOG
+// ==================================================
+
+async function sendLog({
+  member,
+  selectedRole,
+  removedRoles = [],
+}) {
+  if (!LOG_CHANNEL_ID) {
+    console.log(
+      "⚠️ LOG_CHANNEL_ID is not configured."
+    );
+
+    return;
   }
+
+  try {
+    const logChannel =
+      await client.channels.fetch(
+        LOG_CHANNEL_ID
+      );
+
+    if (!logChannel) {
+      console.error(
+        "❌ Log channel not found!"
+      );
+
+      return;
+    }
+
+    if (!logChannel.isTextBased()) {
+      console.error(
+        "❌ LOG_CHANNEL_ID is not a text channel!"
+      );
+
+      return;
+    }
+
+    const removedText =
+      removedRoles.length > 0
+        ? removedRoles
+            .map(
+              (role) =>
+                `<@&${role.id}>`
+            )
+            .join(", ")
+        : "None";
+
+    const logEmbed =
+      new EmbedBuilder()
+        .setColor("#5865F2")
+
+        .setTitle("📋 Gender Role Log")
+
+        .addFields(
+          {
+            name: "👤 Member",
+            value:
+              `${member.user.tag}\n` +
+              `\`${member.id}\``,
+            inline: false,
+          },
+
+          {
+            name: "🎯 New Role",
+            value:
+              `${selectedRole}`,
+            inline: true,
+          },
+
+          {
+            name: "🗑️ Removed",
+            value:
+              removedText,
+            inline: true,
+          }
+        )
+
+        .setTimestamp()
+
+        .setFooter({
+          text: "Gender Role System",
+        });
+
+    await logChannel.send({
+      embeds: [
+        logEmbed,
+      ],
+    });
+
+    console.log(
+      "📋 Discord log sent successfully!"
+    );
+
+  } catch (error) {
+    console.error(
+      "❌ Failed to send Discord log:"
+    );
+
+    console.error(error);
+  }
+}
 
 // ==================================================
 // BOT READY
 // ==================================================
 
-client.once("clientReady", async () => {
+client.once("ready", async () => {
   console.log("======================================");
   console.log("🚀 GENDER ROLE BOT STARTED");
   console.log("======================================");
 
-  console.log(`🤖 Logged in as: ${client.user.tag}`);
-  console.log(`🆔 Bot ID: ${client.user.id}`);
-  console.log(`🏠 Servers: ${client.guilds.cache.size}`);
+  console.log(
+    `🤖 Logged in as: ${client.user.tag}`
+  );
 
-  for (const guild of client.guilds.cache.values()) {
-    console.log(`📌 Server: ${guild.name} (${guild.id})`);
+  console.log(
+    `🆔 Bot ID: ${client.user.id}`
+  );
+
+  console.log(
+    `🏠 Servers: ${client.guilds.cache.size}`
+  );
+
+  for (
+    const guild of client.guilds.cache.values()
+  ) {
+    console.log(
+      `📌 Server: ${guild.name} (${guild.id})`
+    );
   }
 
+  // Send panel
   await sendGenderPanel();
 });
 
@@ -349,322 +492,432 @@ client.once("clientReady", async () => {
 // INTERACTIONS
 // ==================================================
 
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isStringSelectMenu()) {
-    return;
-  }
+client.on(
+  "interactionCreate",
+  async (interaction) => {
 
-  if (interaction.customId !== SELECT_MENU_ID) {
-    return;
-  }
-
-  // ==================================================
-  // GET VALUE
-  // ==================================================
-
-  const rawValue = interaction.values?.[0];
-
-  console.log("======================================");
-  console.log("📥 GENDER SELECTION");
-  console.log(`👤 User: ${interaction.user.tag}`);
-  console.log(`🔎 Raw value: ${rawValue}`);
-  console.log("======================================");
-
-  // ==================================================
-  // CONVERT VALUE
-  // ==================================================
-
-  const selected = VALUE_ALIASES[rawValue];
-
-  if (!selected) {
-    console.error(`❌ Unknown selection value: ${rawValue}`);
-
-    await interaction.reply({
-      content:
-        "❌ Invalid gender selection. Please use the newest gender menu.",
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  console.log(`✅ Converted selection: ${selected}`);
-
-  // ==================================================
-  // ACKNOWLEDGE
-  // ==================================================
-
-  try {
-    await interaction.deferUpdate();
-  } catch (error) {
-    console.error("❌ Could not acknowledge interaction:");
-    console.error(error);
-    return;
-  }
-
-  // ==================================================
-  // SERVER
-  // ==================================================
-
-  const guild = interaction.guild;
-
-  if (!guild) {
-    await interaction.followUp({
-      content: "❌ This can only be used inside a server.",
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  // ==================================================
-  // MEMBER
-  // ==================================================
-
-  let member;
-
-  try {
-    member = await guild.members.fetch(interaction.user.id);
-  } catch (error) {
-    console.error("❌ Could not fetch member:");
-    console.error(error);
-
-    await interaction.followUp({
-      content: "❌ Could not find your server member information.",
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  // ==================================================
-  // BOT MEMBER
-  // ==================================================
-
-  const botMember =
-    guild.members.me ||
-    await guild.members.fetchMe();
-
-  // ==================================================
-  // MANAGE ROLES
-  // ==================================================
-
-  if (!botMember.permissions.has("ManageRoles")) {
-    console.error("❌ Bot does not have Manage Roles.");
-
-    await interaction.followUp({
-      content:
-        "❌ I need the **Manage Roles** permission.",
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  // ==================================================
-  // SELECTED ROLE
-  // ==================================================
-
-  const selectedRole = findRole(guild, selected);
-
-  if (!selectedRole) {
-    await interaction.followUp({
-      content:
-        "❌ The role was not found. Please check the Render Environment Variables.",
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  console.log(
-    `🎯 Role: ${selectedRole.name} (${selectedRole.id})`
-  );
-
-  // ==================================================
-  // ROLE HIERARCHY
-  // ==================================================
-
-  if (
-    selectedRole.position >=
-    botMember.roles.highest.position
-  ) {
-    console.error(
-      `❌ Bot cannot manage role: ${selectedRole.name}`
-    );
-
-    await interaction.followUp({
-      content:
-        `❌ I cannot manage **${selectedRole.name}**.\n\n` +
-        `Move the bot's role **above the gender roles** in Server Settings → Roles.`,
-      ephemeral: true,
-    }).catch(() => {});
-
-    return;
-  }
-
-  // ==================================================
-  // REMOVE OTHER GENDER ROLES
-  // ==================================================
-
-  for (const type of Object.keys(ROLE_IDS)) {
-    if (type === selected) {
-      continue;
-    }
-
-    const oldRole = findRole(guild, type);
-
-    if (!oldRole) {
-      continue;
-    }
-
-    if (!member.roles.cache.has(oldRole.id)) {
-      continue;
+    if (!interaction.isStringSelectMenu()) {
+      return;
     }
 
     if (
-      oldRole.position >=
-      botMember.roles.highest.position
+      interaction.customId !==
+      SELECT_MENU_ID
     ) {
-      console.log(
-        `⚠️ Cannot remove role above bot: ${oldRole.name}`
-      );
-      continue;
+      return;
     }
+
+    // ==================================================
+    // GET SELECTION
+    // ==================================================
+
+    const rawValue =
+      interaction.values?.[0];
+
+    console.log("======================================");
+    console.log("📥 GENDER SELECTION");
+    console.log(
+      `👤 User: ${interaction.user.tag}`
+    );
+    console.log(
+      `🔎 Raw value: ${rawValue}`
+    );
+    console.log("======================================");
+
+    // ==================================================
+    // CONVERT VALUE
+    // ==================================================
+
+    const selected =
+      VALUE_ALIASES[rawValue];
+
+    if (!selected) {
+
+      console.error(
+        `❌ Unknown selection: ${rawValue}`
+      );
+
+      await interaction.reply({
+        content:
+          "❌ Invalid gender selection. Please use the newest menu.",
+        ephemeral: true,
+      }).catch(() => {});
+
+      return;
+    }
+
+    console.log(
+      `✅ Converted selection: ${selected}`
+    );
+
+    // ==================================================
+    // ACKNOWLEDGE
+    // ==================================================
 
     try {
-      await member.roles.remove(
-        oldRole,
-        "Gender role changed"
-      );
+      await interaction.deferReply({
+        ephemeral: true,
+      });
 
-      console.log(
-        `🗑️ Removed old role: ${oldRole.name}`
-      );
     } catch (error) {
+
       console.error(
-        `❌ Could not remove ${oldRole.name}:`
+        "❌ Could not acknowledge interaction:"
       );
+
       console.error(error);
+
+      return;
     }
-  }
 
-  // ==================================================
-  // ADD NEW ROLE
-  // ==================================================
+    // ==================================================
+    // SERVER
+    // ==================================================
 
-  try {
-    if (!member.roles.cache.has(selectedRole.id)) {
-      await member.roles.add(
-        selectedRole,
-        "Gender role selected"
-      );
+    const guild =
+      interaction.guild;
 
-      console.log(
-        `➕ Added role: ${selectedRole.name}`
-      );
-    } else {
-      console.log(
-        `ℹ️ User already has: ${selectedRole.name}`
-      );
+    if (!guild) {
+
+      await interaction.editReply({
+        content:
+          "❌ This can only be used inside a server.",
+      }).catch(() => {});
+
+      return;
     }
-  } catch (error) {
-    console.error("❌ Could not add role:");
-    console.error(error);
 
-    await interaction.followUp({
+    // ==================================================
+    // MEMBER
+    // ==================================================
+
+    let member;
+
+    try {
+
+      member =
+        await guild.members.fetch(
+          interaction.user.id
+        );
+
+    } catch (error) {
+
+      console.error(
+        "❌ Could not fetch member:"
+      );
+
+      console.error(error);
+
+      await interaction.editReply({
+        content:
+          "❌ Could not find your server member information.",
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==================================================
+    // BOT MEMBER
+    // ==================================================
+
+    let botMember;
+
+    try {
+
+      botMember =
+        guild.members.me ||
+        await guild.members.fetchMe();
+
+    } catch (error) {
+
+      console.error(
+        "❌ Could not fetch bot member:"
+      );
+
+      console.error(error);
+
+      await interaction.editReply({
+        content:
+          "❌ I could not check my server permissions.",
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==================================================
+    // MANAGE ROLES
+    // ==================================================
+
+    if (
+      !botMember.permissions.has(
+        "ManageRoles"
+      )
+    ) {
+
+      console.error(
+        "❌ Bot does not have Manage Roles permission."
+      );
+
+      await interaction.editReply({
+        content:
+          "❌ I need the **Manage Roles** permission.",
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==================================================
+    // SELECTED ROLE
+    // ==================================================
+
+    const selectedRole =
+      findRole(
+        guild,
+        selected
+      );
+
+    if (!selectedRole) {
+
+      await interaction.editReply({
+        content:
+          "❌ The selected role was not found. Check your Render role IDs.",
+      }).catch(() => {});
+
+      return;
+    }
+
+    console.log(
+      `🎯 Selected role: ${selectedRole.name} (${selectedRole.id})`
+    );
+
+    // ==================================================
+    // ROLE HIERARCHY
+    // ==================================================
+
+    if (
+      selectedRole.position >=
+      botMember.roles.highest.position
+    ) {
+
+      console.error(
+        `❌ Bot cannot manage ${selectedRole.name}`
+      );
+
+      await interaction.editReply({
+        content:
+          `❌ I cannot manage **${selectedRole.name}**.\n\n` +
+          `Please move my bot role **above the gender roles** in Server Settings → Roles.`,
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==================================================
+    // REMOVE OLD GENDER ROLES
+    // ==================================================
+
+    const removedRoles = [];
+
+    for (
+      const type of Object.keys(
+        ROLE_IDS
+      )
+    ) {
+
+      if (type === selected) {
+        continue;
+      }
+
+      const oldRole =
+        findRole(
+          guild,
+          type
+        );
+
+      if (!oldRole) {
+        continue;
+      }
+
+      if (
+        !member.roles.cache.has(
+          oldRole.id
+        )
+      ) {
+        continue;
+      }
+
+      // Check hierarchy
+      if (
+        oldRole.position >=
+        botMember.roles.highest.position
+      ) {
+
+        console.log(
+          `⚠️ Cannot remove role above bot: ${oldRole.name}`
+        );
+
+        continue;
+      }
+
+      try {
+
+        await member.roles.remove(
+          oldRole,
+          "Gender role changed"
+        );
+
+        removedRoles.push(
+          oldRole
+        );
+
+        console.log(
+          `🗑️ Removed old role: ${oldRole.name}`
+        );
+
+      } catch (error) {
+
+        console.error(
+          `❌ Could not remove ${oldRole.name}:`
+        );
+
+        console.error(error);
+      }
+    }
+
+    // ==================================================
+    // ADD SELECTED ROLE
+    // ==================================================
+
+    try {
+
+      if (
+        !member.roles.cache.has(
+          selectedRole.id
+        )
+      ) {
+
+        await member.roles.add(
+          selectedRole,
+          "Gender role selected"
+        );
+
+        console.log(
+          `➕ Added role: ${selectedRole.name}`
+        );
+
+      } else {
+
+        console.log(
+          `ℹ️ User already has: ${selectedRole.name}`
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "❌ Could not add selected role:"
+      );
+
+      console.error(error);
+
+      await interaction.editReply({
+        content:
+          "❌ I couldn't give you the role. Check **Manage Roles** and make sure the bot role is above the gender roles.",
+      }).catch(() => {});
+
+      return;
+    }
+
+    // ==================================================
+    // SEND DISCORD LOG
+    // ==================================================
+
+    await sendLog({
+      member,
+      selectedRole,
+      removedRoles,
+    });
+
+    // ==================================================
+    // CONFIRMATION
+    // ==================================================
+
+    await interaction.editReply({
       content:
-        "❌ I couldn't give you the role. Check **Manage Roles** and the bot's role position.",
-      ephemeral: true,
+        `✅ Your gender role is now **${selectedRole.name}**.`,
     }).catch(() => {});
 
-    return;
+    console.log("======================================");
+
+    console.log(
+      `✅ ${member.user.tag} received ${selectedRole.name}`
+    );
+
+    console.log("======================================");
   }
+);
 
-  // ==================================================
-  // CONFIRMATION
-  // ==================================================
+// ==================================================
+// DEBUG / ERRORS
+// ==================================================
 
-  await interaction.followUp({
-    content:
-      `✅ Your gender role is now **${selectedRole.name}**.`,
-    ephemeral: true,
-  }).catch(() => {});
-
+client.on("debug", (message) => {
   console.log(
-    `✅ ${member.user.tag} received ${selectedRole.name}`
+    `🔧 Discord Debug: ${message}`
   );
 });
 
-// ==================================================
-// ERRORS
-// ==================================================
+client.on("warn", (message) => {
+  console.warn(
+    `⚠️ Discord Warning: ${message}`
+  );
+});
 
 client.on("error", (error) => {
-  console.error("❌ Discord client error:");
+  console.error(
+    "❌ Discord Client Error:"
+  );
+
   console.error(error);
 });
 
-process.on("unhandledRejection", (error) => {
-  console.error("❌ Unhandled promise rejection:");
-  console.error(error);
-});
+process.on(
+  "unhandledRejection",
+  (error) => {
+    console.error(
+      "❌ Unhandled Promise Rejection:"
+    );
 
-process.on("uncaughtException", (error) => {
-  console.error("❌ Uncaught exception:");
-  console.error(error);
-});
+    console.error(error);
+  }
+);
+
+process.on(
+  "uncaughtException",
+  (error) => {
+    console.error(
+      "❌ Uncaught Exception:"
+    );
+
+    console.error(error);
+  }
+);
 
 // ==================================================
 // LOGIN
 // ==================================================
-client.once("ready", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
 
-  try {
-    console.log(`📢 Fetching channel: ${CHANNEL_ID}`);
-
-    const channel = await client.channels.fetch(CHANNEL_ID);
-
-    if (!channel) {
-      console.error("❌ Channel not found!");
-      return;
-    }
-
-    console.log(`✅ Channel found: ${channel.name}`);
-
-    await channel.send({
-      embeds: [
-        createMainEmbed(),
-        createAccessEmbed()
-      ],
-      components: [createGenderMenu()],
-    });
-
-    console.log("✅ Gender selection embed sent!");
-  } catch (error) {
-    console.error("❌ Failed to send embed:");
-    console.error(error);
-  }
-});
-
-client.on("debug", (message) => {
-  console.log(`🔧 Discord Debug: ${message}`);
-});
-
-client.on("warn", (message) => {
-  console.warn(`⚠️ Discord Warning: ${message}`);
-});
-
-client.on("error", (error) => {
-  console.error("❌ Discord Client Error:");
-  console.error(error);
-});
-
-console.log("🔑 Attempting Discord login...");
+console.log(
+  "🔑 Attempting Discord login..."
+);
 
 client.login(TOKEN).catch((error) => {
-  console.error("❌ Discord login failed!");
+
+  console.error(
+    "❌ Discord login failed!"
+  );
+
   console.error(error);
+
   process.exit(1);
 });
