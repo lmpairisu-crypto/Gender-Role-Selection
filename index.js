@@ -253,10 +253,6 @@ function createHouseGuardEmbed() {
         "🚪 Please respect the house boundaries.",
       ].join("\n")
     )
-    .setFooter({
-      text: "Pinoy Big Sister • Private House Access",
-    })
-    .setTimestamp();
 
   if (DOG_GIF_URL) {
     embed.setThumbnail(DOG_GIF_URL);
