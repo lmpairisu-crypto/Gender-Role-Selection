@@ -571,10 +571,10 @@ async function sendRegistrationPanel() {
 
     await channel.send({
       embeds: [
-        createMainEmbed(),
-        createHouseGuardEmbed(),
-        createHouseImageEmbed(),
-      ],
+  createMainEmbed(),
+  createHouseGuardEmbed(),
+  createGenderAccessEmbed(),
+],
       components: [
         createStartButton(),
       ],
