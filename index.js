@@ -239,7 +239,7 @@ function createMainEmbed() {
 // ============================================================
 
 function createHouseGuardEmbed() {
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor("#5865F2")
     .setTitle("🐕 HOUSE GUARD")
     .setDescription(
@@ -250,9 +250,19 @@ function createHouseGuardEmbed() {
         "",
         "🔊 Unauthorized attempts to enter restricted areas may attract the attention of the House Guards.",
         "",
-        "🚪 Please respect the house boundaries.", 
-  ].join("\n")
-  );
+        "🚪 Please respect the house boundaries.",
+      ].join("\n")
+    )
+    .setFooter({
+      text: "Pinoy Big Sister • Private House Access",
+    })
+    .setTimestamp();
+
+  if (DOG_GIF_URL) {
+    embed.setThumbnail(DOG_GIF_URL);
+  }
+
+  return embed;
 }
 
 // ============================================================
