@@ -230,6 +230,8 @@ function createMainEmbed() {
         "",
         "👮 **STAFF REVIEW**",
         "Your selected gender determines which role will be given **if your registration is approved by staff**.",
+  ].join("\n")
+  );
 }
 
 // ============================================================
@@ -249,6 +251,8 @@ function createHouseGuardEmbed() {
         "🔊 Unauthorized attempts to enter restricted areas may attract the attention of the House Guards.",
         "",
         "🚪 Please respect the house boundaries.", 
+  ].join("\n")
+  );
 }
 
 // ============================================================
