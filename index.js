@@ -229,7 +229,7 @@ function createMainEmbed() {
         "🔒 Prefer not to say",
         "",
         "👮 **STAFF REVIEW**",
-        "Your selected gender determines which role will be given **if your registration is approved by staff**
+        "Your selected gender determines which role will be given **if your registration is approved by staff**.",
 }
 
 // ============================================================
