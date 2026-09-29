@@ -25,9 +25,11 @@ const PORT = Number(process.env.PORT) || 10000;
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const CHANNEL_ID = process.env.CHANNEL_ID;
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
+
+const NICKNAME_LOG_CHANNEL_ID =
+  process.env.NICKNAME_LOG_CHANNEL_ID;
 
 // Gender roles
 const MALE_ROLE_ID = process.env.MALE_ROLE_ID;
