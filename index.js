@@ -760,7 +760,7 @@ async function saveRegistrationLog(
   }
 
   // Create a new combined log.
-  const message = await logChannel.send({
+    const message = await logChannel.send({
     content: `<@&${STAFF_ROLE_ID}>`,
     embeds: [embed],
     components: [
@@ -768,6 +768,7 @@ async function saveRegistrationLog(
         member.id,
         complete
       ),
+    ],
   });
 
   registration.logMessageId = message.id;
