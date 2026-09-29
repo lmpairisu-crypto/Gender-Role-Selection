@@ -11,6 +11,7 @@ const {
   TextInputStyle,
   EmbedBuilder,
   StringSelectMenuBuilder,
+  SlashCommandBuilder, 
 } = require("discord.js");
 
 // ============================================================
@@ -525,7 +526,7 @@ async function sendRegistrationToLog({
 // READY
 // ============================================================
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(
     "======================================"
   );
@@ -549,6 +550,38 @@ client.once("ready", async () => {
   console.log(
     `🏠 Servers: ${client.guilds.cache.size}`
   );
+
+  await sendRegistrationPanel();
+});
+
+  console.log(
+    `🏠 Servers: ${client.guilds.cache.size}`
+  );
+
+  // ==========================================================
+  // REGISTER SLASH COMMANDS
+  // ==========================================================
+
+  try {
+    const guild = client.guilds.cache.first();
+
+    if (guild) {
+      await guild.commands.set(slashCommands);
+
+      console.log(
+        `✅ Slash commands registered in: ${guild.name}`
+      );
+    } else {
+      console.log(
+        "⚠️ No Discord server found for slash command registration."
+      );
+    }
+  } catch (error) {
+    console.error(
+      "❌ Failed to register slash commands:",
+      error
+    );
+  }
 
   await sendRegistrationPanel();
 });
@@ -1132,3 +1165,598 @@ client
 
     console.error(error);
   });
+
+// ======================================================
+// SLASH COMMAND HANDLER
+// ======================================================
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) {
+    return;
+  }
+
+  try {
+    // ==================================================
+    // STAFF CHECK
+    // ==================================================
+
+    const staffMember =
+      await interaction.guild.members.fetch(
+        interaction.user.id
+      );
+
+    if (
+      !staffMember.roles.cache.has(
+        STAFF_ROLE_ID
+      )
+    ) {
+      await interaction.reply({
+        content:
+          "❌ You do not have permission to use this command.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    // ==================================================
+    // /nickname
+    // ==================================================
+
+    if (
+      interaction.commandName === "nickname"
+    ) {
+      const subcommand =
+        interaction.options.getSubcommand();
+
+      // ------------------------------------------------
+      // /nickname setup
+      // ------------------------------------------------
+
+      if (subcommand === "setup") {
+        const channel =
+          await client.channels.fetch(
+            CHANNEL_ID
+          );
+
+        if (
+          !channel ||
+          !channel.isTextBased()
+        ) {
+          await interaction.reply({
+            content:
+              "❌ CHANNEL_ID is not a valid text channel.",
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        const messages =
+          await channel.messages.fetch({
+            limit: 100,
+          });
+
+        // ----------------------------------------------
+        // Nickname panel
+        // ----------------------------------------------
+
+        let nicknameMessage =
+          messages.find(
+            (message) =>
+              message.author.id ===
+                client.user.id &&
+              message.embeds.some(
+                (embed) =>
+                  embed.title ===
+                  "🏷️ REQUEST NICKNAME"
+              )
+          );
+
+        if (nicknameMessage) {
+          await nicknameMessage.edit({
+            embeds: [
+              createNicknameEmbed(),
+            ],
+            components: [
+              createNicknameButtonRow(),
+            ],
+          });
+        } else {
+          await channel.send({
+            embeds: [
+              createNicknameEmbed(),
+            ],
+            components: [
+              createNicknameButtonRow(),
+            ],
+          });
+        }
+
+        // ----------------------------------------------
+        // House Guard panel
+        // ----------------------------------------------
+
+        let guardMessage =
+          messages.find(
+            (message) =>
+              message.author.id ===
+                client.user.id &&
+              message.embeds.some(
+                (embed) =>
+                  embed.title ===
+                  "🐕 BIG SISTER HOUSE • HOUSE GUARD"
+              )
+          );
+
+        if (guardMessage) {
+          await guardMessage.edit({
+            embeds: [
+              createHouseGuardEmbed(),
+            ],
+            components: [],
+          });
+        } else {
+          await channel.send({
+            embeds: [
+              createHouseGuardEmbed(),
+            ],
+          });
+        }
+
+        // ----------------------------------------------
+        // Gender Access panel
+        // ----------------------------------------------
+
+        let genderMessage =
+          messages.find(
+            (message) =>
+              message.author.id ===
+                client.user.id &&
+              message.embeds.some(
+                (embed) =>
+                  embed.title ===
+                  "🏠 BIG SISTER HOUSE • GENDER ACCESS"
+              )
+          );
+
+        if (genderMessage) {
+          await genderMessage.edit({
+            embeds: [
+              createGenderAccessEmbed(),
+            ],
+            components: [
+              createGenderButtonRow(),
+            ],
+          });
+        } else {
+          await channel.send({
+            embeds: [
+              createGenderAccessEmbed(),
+            ],
+            components: [
+              createGenderButtonRow(),
+            ],
+          });
+        }
+
+        await interaction.reply({
+          content:
+            "✅ Big Sister House panels have been created/updated.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Get target member
+      // ------------------------------------------------
+
+      const targetUser =
+        interaction.options.getUser(
+          "member",
+          true
+        );
+
+      const targetMember =
+        await interaction.guild.members.fetch(
+          targetUser.id
+        );
+
+      // ------------------------------------------------
+      // /nickname sync
+      // ------------------------------------------------
+
+      if (subcommand === "sync") {
+        await syncMemberNickname(
+          targetMember
+        );
+
+        await interaction.reply({
+          content:
+            `✅ Nickname synchronized for ${targetMember}.`,
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // /nickname cleanup
+      // ------------------------------------------------
+
+      if (
+        subcommand === "cleanup"
+      ) {
+        const baseNickname =
+          getBaseNickname(
+            targetMember
+          );
+
+        if (
+          !targetMember.manageable
+        ) {
+          await interaction.reply({
+            content:
+              "❌ I cannot manage this member's nickname. Check the bot role hierarchy.",
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        if (
+          !targetMember.guild.members.me.permissions.has(
+            PermissionsBitField.Flags.ManageNicknames
+          )
+        ) {
+          await interaction.reply({
+            content:
+              "❌ I need **Manage Nicknames** permission.",
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        botNicknameChanges.set(
+          targetMember.id,
+          baseNickname
+        );
+
+        await targetMember.setNickname(
+          baseNickname,
+          "Nickname cleanup command"
+        );
+
+        setTimeout(() => {
+          botNicknameChanges.delete(
+            targetMember.id
+          );
+        }, 5000);
+
+        await interaction.reply({
+          content:
+            `✅ Managed nickname tags removed from ${targetMember}.\n🏷️ Base nickname: \`${baseNickname}\``,
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // /nickname reset
+      // ------------------------------------------------
+
+      if (
+        subcommand === "reset"
+      ) {
+        const originalUsername =
+          targetMember.user.username;
+
+        await syncMemberNickname(
+          targetMember,
+          originalUsername
+        );
+
+        const updated =
+          await interaction.guild.members.fetch(
+            targetMember.id
+          );
+
+        await interaction.reply({
+          content:
+            `✅ Nickname reset using the original Discord username base.\n🏷️ Current nickname: \`${updated.nickname || originalUsername}\``,
+          ephemeral: true,
+        });
+
+        return;
+      }
+    }
+
+    // ==================================================
+    // /role
+    // ==================================================
+
+    if (
+      interaction.commandName === "role"
+    ) {
+      const subcommand =
+        interaction.options.getSubcommand();
+
+      const targetUser =
+        interaction.options.getUser(
+          "member",
+          true
+        );
+
+      const targetMember =
+        await interaction.guild.members.fetch(
+          targetUser.id
+        );
+
+      // ------------------------------------------------
+      // /role info
+      // ------------------------------------------------
+
+      if (
+        subcommand === "info"
+      ) {
+        const configuredRoles = [
+          [
+            LAMPOON_ROLE_ID,
+            "🎭 Lampoon",
+          ],
+          [
+            CONTENT_CREATOR_ROLE_ID,
+            "🎮 Content Creator",
+          ],
+          [
+            LMP_SUPPORTER_ROLE_ID,
+            "🏷️ LMP Supporter",
+          ],
+          [
+            PARTNERSHIP_ROLE_ID,
+            "🤝 Partnership",
+          ],
+          [
+            COLLABORATOR_ROLE_ID,
+            "🤝 Collaborator",
+          ],
+          [
+            SPONSOR_ROLE_ID,
+            "💰 Sponsor",
+          ],
+          [
+            SATIRICAL_CC_ROLE_ID,
+            "🎭 Satirical CC",
+          ],
+          [
+            MALE_ROLE_ID,
+            "♂️ Male",
+          ],
+          [
+            FEMALE_ROLE_ID,
+            "♀️ Female",
+          ],
+          [
+            LGBT_ROLE_ID,
+            "🏳️‍🌈 LGBT+",
+          ],
+          [
+            PREFER_NOT_TO_SAY_ROLE_ID,
+            "🔒 Prefer not to say",
+          ],
+        ];
+
+        const memberRoles =
+          configuredRoles
+            .filter(
+              ([roleId]) =>
+                roleId &&
+                targetMember.roles.cache.has(
+                  roleId
+                )
+            )
+            .map(
+              ([, roleName]) =>
+                roleName
+            );
+
+        await interaction.reply({
+          content:
+            `👤 **${targetMember.user.tag}**\n\n` +
+            (
+              memberRoles.length
+                ? memberRoles
+                    .map(
+                      (role) =>
+                        `• ${role}`
+                    )
+                    .join("\n")
+                : "No configured roles found."
+            ),
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Get requested role
+      // ------------------------------------------------
+
+      const role =
+        interaction.options.getRole(
+          "role",
+          true
+        );
+
+      const botMember =
+        interaction.guild.members.me;
+
+      if (!botMember) {
+        await interaction.reply({
+          content:
+            "❌ I could not find my bot member.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Bot Manage Roles permission
+      // ------------------------------------------------
+
+      if (
+        !botMember.permissions.has(
+          PermissionsBitField.Flags.ManageRoles
+        )
+      ) {
+        await interaction.reply({
+          content:
+            "❌ I need **Manage Roles** permission.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Managed role check
+      // ------------------------------------------------
+
+      if (role.managed) {
+        await interaction.reply({
+          content:
+            "❌ I cannot manually manage a Discord-managed role.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Role hierarchy check
+      // ------------------------------------------------
+
+      if (
+        botMember.roles.highest.comparePositionTo(
+          role
+        ) <= 0
+      ) {
+        await interaction.reply({
+          content:
+            "❌ That role is equal to or higher than my highest role. Move my bot role above it.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // /role add
+      // ------------------------------------------------
+
+      if (
+        subcommand === "add"
+      ) {
+        if (
+          targetMember.roles.cache.has(
+            role.id
+          )
+        ) {
+          await interaction.reply({
+            content:
+              `ℹ️ ${targetMember} already has ${role}.`,
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        await targetMember.roles.add(
+          role,
+          `Staff /role add by ${interaction.user.tag}`
+        );
+
+        // Sync nickname after role addition.
+        await syncMemberNickname(
+          targetMember
+        );
+
+        await interaction.reply({
+          content:
+            `✅ Added ${role} to ${targetMember}.\n🏷️ Nickname synchronized.`,
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // /role remove
+      // ------------------------------------------------
+
+      if (
+        subcommand === "remove"
+      ) {
+        if (
+          !targetMember.roles.cache.has(
+            role.id
+          )
+        ) {
+          await interaction.reply({
+            content:
+              `ℹ️ ${targetMember} does not have ${role}.`,
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        await targetMember.roles.remove(
+          role,
+          `Staff /role remove by ${interaction.user.tag}`
+        );
+
+        // Fetch fresh member data so the nickname
+        // reflects the newly removed role.
+        const refreshedMember =
+          await interaction.guild.members.fetch(
+            targetMember.id
+          );
+
+        await syncMemberNickname(
+          refreshedMember
+        );
+
+        await interaction.reply({
+          content:
+            `✅ Removed ${role} from ${refreshedMember}.\n🏷️ Nickname synchronized.`,
+          ephemeral: true,
+        });
+
+        return;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "❌ Slash command error:",
+      error
+    );
+
+    if (
+      !interaction.replied &&
+      !interaction.deferred
+    ) {
+      await interaction.reply({
+        content:
+          "❌ An error occurred while processing the command.",
+        ephemeral: true,
+      });
+    }
+  }
+});
