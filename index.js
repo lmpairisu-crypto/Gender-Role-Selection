@@ -39,15 +39,19 @@ app.listen(PORT, "0.0.0.0", () => {
 // ENVIRONMENT VARIABLES
 // ============================================================
 
-const TOKEN = process.env.DISCORD_TOKEN;
-const CHANNEL_ID = process.env.CHANNEL_ID;
-const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
-const NICKNAME_LOG_CHANNEL_ID =
-  process.env.NICKNAME_LOG_CHANNEL_ID;
-const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
-
 const ROLE_IDS = {
-  const LAMPOON_ROLE_ID =
+  male: process.env.MALE_ROLE_ID,
+  female: process.env.FEMALE_ROLE_ID,
+  lgbt: process.env.LGBT_ROLE_ID,
+  prefer_not_to_say:
+    process.env.PREFER_NOT_TO_SAY_ROLE_ID,
+};
+
+// ============================================================
+// MANAGED ROLE IDs
+// ============================================================
+
+const LAMPOON_ROLE_ID =
   process.env.LAMPOON_ROLE_ID;
 
 const CONTENT_CREATOR_ROLE_ID =
@@ -79,7 +83,6 @@ const LGBT_ROLE_ID =
 
 const PREFER_NOT_TO_SAY_ROLE_ID =
   process.env.PREFER_NOT_TO_SAY_ROLE_ID;
-};
 
 // ============================================================
 // IMAGES
