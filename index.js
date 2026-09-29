@@ -47,10 +47,38 @@ const NICKNAME_LOG_CHANNEL_ID =
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 
 const ROLE_IDS = {
-  male: process.env.MALE_ROLE_ID,
-  female: process.env.FEMALE_ROLE_ID,
-  lgbt: process.env.LGBT_ROLE_ID,
-  prefer_not_to_say: process.env.PREFER_NOT_TO_SAY_ROLE_ID,
+  const LAMPOON_ROLE_ID =
+  process.env.LAMPOON_ROLE_ID;
+
+const CONTENT_CREATOR_ROLE_ID =
+  process.env.CONTENT_CREATOR_ROLE_ID;
+
+const LMP_SUPPORTER_ROLE_ID =
+  process.env.LMP_SUPPORTER_ROLE_ID;
+
+const PARTNERSHIP_ROLE_ID =
+  process.env.PARTNERSHIP_ROLE_ID;
+
+const COLLABORATOR_ROLE_ID =
+  process.env.COLLABORATOR_ROLE_ID;
+
+const SPONSOR_ROLE_ID =
+  process.env.SPONSOR_ROLE_ID;
+
+const SATIRICAL_CC_ROLE_ID =
+  process.env.SATIRICAL_CC_ROLE_ID;
+
+const MALE_ROLE_ID =
+  process.env.MALE_ROLE_ID;
+
+const FEMALE_ROLE_ID =
+  process.env.FEMALE_ROLE_ID;
+
+const LGBT_ROLE_ID =
+  process.env.LGBT_ROLE_ID;
+
+const PREFER_NOT_TO_SAY_ROLE_ID =
+  process.env.PREFER_NOT_TO_SAY_ROLE_ID;
 };
 
 // ============================================================
@@ -1994,33 +2022,7 @@ client.on("interactionCreate", async (interaction) => {
         });
 
         return;
-          }
-      
-      // ------------------------------------------------
-      // /role remove
-      // ------------------------------------------------
-
-      if (
-        subcommand === "remove"
-      ) {
-        if (
-          !targetMember.roles.cache.has(
-            role.id
-          )
-        ) {
-          await interaction.reply({
-            content:
-              `ℹ️ ${targetMember} does not have ${role}.`,
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-    await targetMember.roles.remove(
-  role,
-  `Staff /role remove by ${interaction.user.tag}`
-);
+      }
 
       // ------------------------------------------------
       // /role remove
@@ -2079,8 +2081,8 @@ client.on("interactionCreate", async (interaction) => {
         });
 
         return;
-          }
-        }
+      }
+    }
   } catch (error) {
     console.error(
       "❌ Slash command error:",
