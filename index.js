@@ -11,7 +11,8 @@ const {
   TextInputStyle,
   EmbedBuilder,
   StringSelectMenuBuilder,
-  SlashCommandBuilder, 
+  SlashCommandBuilder,
+  PermissionsBitField,
 } = require("discord.js");
 
 // ============================================================
@@ -690,6 +691,129 @@ async function sendNicknameLog({
 }
 
 // ============================================================
+// SLASH COMMAND DEFINITIONS
+// ============================================================
+
+const slashCommands = [
+  new SlashCommandBuilder()
+    .setName("nickname")
+    .setDescription("Manage Big Sister House nicknames")
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("setup")
+        .setDescription(
+          "Create or update the Big Sister House panels"
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("sync")
+        .setDescription(
+          "Synchronize a member's nickname with their roles"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription(
+              "Member to synchronize"
+            )
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("cleanup")
+        .setDescription(
+          "Remove managed nickname tags"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription(
+              "Member to clean"
+            )
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("reset")
+        .setDescription(
+          "Reset the member nickname"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription(
+              "Member to reset"
+            )
+            .setRequired(true)
+        )
+    ),
+
+  new SlashCommandBuilder()
+    .setName("role")
+    .setDescription("Manage member roles")
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("add")
+        .setDescription(
+          "Add a role to a member"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription("Member")
+            .setRequired(true)
+        )
+        .addRoleOption((option) =>
+          option
+            .setName("role")
+            .setDescription(
+              "Role to add"
+            )
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("remove")
+        .setDescription(
+          "Remove a role from a member"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription("Member")
+            .setRequired(true)
+        )
+        .addRoleOption((option) =>
+          option
+            .setName("role")
+            .setDescription(
+              "Role to remove"
+            )
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("info")
+        .setDescription(
+          "Show configured roles on a member"
+        )
+        .addUserOption((option) =>
+          option
+            .setName("member")
+            .setDescription("Member")
+            .setRequired(true)
+        )
+    ),
+].map((command) =>
+  command.toJSON()
+);
+
+// ============================================================
 // READY
 // ============================================================
 
@@ -718,22 +842,18 @@ client.once("clientReady", async () => {
     `🏠 Servers: ${client.guilds.cache.size}`
   );
 
-  await sendRegistrationPanel();
-});
-
-  console.log(
-    `🏠 Servers: ${client.guilds.cache.size}`
-  );
-
   // ==========================================================
   // REGISTER SLASH COMMANDS
   // ==========================================================
 
   try {
-    const guild = client.guilds.cache.first();
+    const guild =
+      client.guilds.cache.first();
 
     if (guild) {
-      await guild.commands.set(slashCommands);
+      await guild.commands.set(
+        slashCommands
+      );
 
       console.log(
         `✅ Slash commands registered in: ${guild.name}`
@@ -1845,28 +1965,37 @@ client.on("interactionCreate", async (interaction) => {
         }
 
         await targetMember.roles.add(
-  role,
-  `Staff /role add by ${interaction.user.tag}`
-);
+          role,
+          `Staff /role add by ${interaction.user.tag}`
+        );
 
-// ========================================================
-// LOG ROLE ADDITION
-// ========================================================
+        // ========================================================
+        // LOG ROLE ADDITION
+        // ========================================================
 
-await sendNicknameLog({
-  action: "role_add",
-  member: targetMember,
-  actor: interaction.member,
-  role: role,
-  reason:
-    `/role add used by ${interaction.user.tag}`,
-});
+        await sendNicknameLog({
+          action: "role_add",
+          member: targetMember,
+          actor: interaction.member,
+          role: role,
+          reason:
+            `/role add used by ${interaction.user.tag}`,
+        });
 
-// Sync nickname after role addition.
-await syncMemberNickname(
-  targetMember
-);
+        // Sync nickname after role addition.
+        await syncMemberNickname(
+          targetMember
+        );
 
+        await interaction.reply({
+          content:
+            `✅ Added ${role} to ${targetMember}.\n🏷️ Nickname synchronized.`,
+          ephemeral: true,
+        });
+
+        return;
+          }
+      
       // ------------------------------------------------
       // /role remove
       // ------------------------------------------------
@@ -1893,26 +2022,65 @@ await syncMemberNickname(
   `Staff /role remove by ${interaction.user.tag}`
 );
 
-// ========================================================
-// LOG ROLE REMOVAL
-// ========================================================
+      // ------------------------------------------------
+      // /role remove
+      // ------------------------------------------------
 
-await sendNicknameLog({
-  action: "role_remove",
-  member: targetMember,
-  actor: interaction.member,
-  role: role,
-  reason:
-    `/role remove used by ${interaction.user.tag}`,
-});
+      if (
+        subcommand === "remove"
+      ) {
+        if (
+          !targetMember.roles.cache.has(
+            role.id
+          )
+        ) {
+          await interaction.reply({
+            content:
+              `ℹ️ ${targetMember} does not have ${role}.`,
+            ephemeral: true,
+          });
 
-// Fetch fresh member data so the nickname
-// reflects the newly removed role.
-const refreshedMember =
-  await interaction.guild.members.fetch(
-    targetMember.id
-  );
-    }
+          return;
+        }
+
+        await targetMember.roles.remove(
+          role,
+          `Staff /role remove by ${interaction.user.tag}`
+        );
+
+        // ========================================================
+        // LOG ROLE REMOVAL
+        // ========================================================
+
+        await sendNicknameLog({
+          action: "role_remove",
+          member: targetMember,
+          actor: interaction.member,
+          role: role,
+          reason:
+            `/role remove used by ${interaction.user.tag}`,
+        });
+
+        // Fetch fresh member data so the nickname
+        // reflects the newly removed role.
+        const refreshedMember =
+          await interaction.guild.members.fetch(
+            targetMember.id
+          );
+
+        await syncMemberNickname(
+          refreshedMember
+        );
+
+        await interaction.reply({
+          content:
+            `✅ Removed ${role} from ${refreshedMember}.\n🏷️ Nickname synchronized.`,
+          ephemeral: true,
+        });
+
+        return;
+          }
+        }
   } catch (error) {
     console.error(
       "❌ Slash command error:",
