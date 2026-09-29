@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 
 const {
@@ -15,151 +17,46 @@ const {
   PermissionsBitField,
 } = require("discord.js");
 
-// ============================================================
-// RENDER HEALTH SERVER
-// ============================================================
+// ======================================================
+// CONFIG
+// ======================================================
 
-const app = express();
+const PORT = Number(process.env.PORT) || 10000;
 
-const PORT = process.env.PORT || 10000;
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-app.get("/", (req, res) => {
-  res.status(200).send("Gender Registration Bot is online!");
-});
-
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Health server running on port ${PORT}`);
-});
-
-// ============================================================
-// ENVIRONMENT VARIABLES
-// ============================================================
-
-const TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
-const NICKNAME_LOG_CHANNEL_ID =
-  process.env.NICKNAME_LOG_CHANNEL_ID;
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 
-const ROLE_IDS = {
-  male: process.env.MALE_ROLE_ID,
-  female: process.env.FEMALE_ROLE_ID,
-  lgbt: process.env.LGBT_ROLE_ID,
-  prefer_not_to_say:
-    process.env.PREFER_NOT_TO_SAY_ROLE_ID,
-};
-
-// ============================================================
-// MANAGED ROLE IDs
-// ============================================================
-
-const LAMPOON_ROLE_ID =
-  process.env.LAMPOON_ROLE_ID;
-
-const CONTENT_CREATOR_ROLE_ID =
-  process.env.CONTENT_CREATOR_ROLE_ID;
-
-const LMP_SUPPORTER_ROLE_ID =
-  process.env.LMP_SUPPORTER_ROLE_ID;
-
-const PARTNERSHIP_ROLE_ID =
-  process.env.PARTNERSHIP_ROLE_ID;
-
-const COLLABORATOR_ROLE_ID =
-  process.env.COLLABORATOR_ROLE_ID;
-
-const SPONSOR_ROLE_ID =
-  process.env.SPONSOR_ROLE_ID;
-
-const SATIRICAL_CC_ROLE_ID =
-  process.env.SATIRICAL_CC_ROLE_ID;
-
-const MALE_ROLE_ID =
-  process.env.MALE_ROLE_ID;
-
-const FEMALE_ROLE_ID =
-  process.env.FEMALE_ROLE_ID;
-
-const LGBT_ROLE_ID =
-  process.env.LGBT_ROLE_ID;
-
+// Gender roles
+const MALE_ROLE_ID = process.env.MALE_ROLE_ID;
+const FEMALE_ROLE_ID = process.env.FEMALE_ROLE_ID;
+const LGBT_ROLE_ID = process.env.LGBT_ROLE_ID;
 const PREFER_NOT_TO_SAY_ROLE_ID =
   process.env.PREFER_NOT_TO_SAY_ROLE_ID;
 
-// ============================================================
-// IMAGES
-// ============================================================
+// Nickname manager roles
+const LAMPOON_ROLE_ID = process.env.LAMPOON_ROLE_ID;
+const CONTENT_CREATOR_ROLE_ID = process.env.CONTENT_CREATOR_ROLE_ID;
+const LMP_SUPPORTER_ROLE_ID = process.env.LMP_SUPPORTER_ROLE_ID;
 
-const PICTURE_URL = process.env.PICTURE_URL || "";
-const DOG_GIF_URL = process.env.DOG_GIF_URL || "";
-const HOUSE_IMAGE_URL = process.env.HOUSE_IMAGE_URL || "";
+// Additional role IDs
+const PARTNERSHIP_ROLE_ID = process.env.PARTNERSHIP_ROLE_ID;
+const COLLABORATOR_ROLE_ID = process.env.COLLABORATOR_ROLE_ID;
+const SPONSOR_ROLE_ID = process.env.SPONSOR_ROLE_ID;
+const SATIRICAL_CC_ROLE_ID = process.env.SATIRICAL_CC_ROLE_ID;
 
-// ============================================================
-// CONFIG CHECK
-// ============================================================
+// Images
+const PICTURE_URL = process.env.PICTURE_URL;
+const DOG_GIF_URL = process.env.DOG_GIF_URL;
+const HOUSE_IMAGE_URL = process.env.HOUSE_IMAGE_URL;
 
-console.log("======================================");
-console.log("🔧 GENDER REGISTRATION BOT");
-console.log("======================================");
+// ======================================================
+// VALIDATION
+// ======================================================
 
-console.log(
-  `DISCORD_TOKEN: ${TOKEN ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `CHANNEL_ID: ${CHANNEL_ID ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `LOG_CHANNEL_ID: ${LOG_CHANNEL_ID ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `STAFF_ROLE_ID: ${STAFF_ROLE_ID ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `MALE_ROLE_ID: ${ROLE_IDS.male ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `FEMALE_ROLE_ID: ${ROLE_IDS.female ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `LGBT_ROLE_ID: ${ROLE_IDS.lgbt ? "✅ SET" : "❌ MISSING"}`
-);
-
-console.log(
-  `PREFER_NOT_TO_SAY_ROLE_ID: ${
-    ROLE_IDS.prefer_not_to_say
-      ? "✅ SET"
-      : "❌ MISSING"
-  }`
-);
-
-console.log(
-  `PICTURE_URL: ${PICTURE_URL ? "✅ SET" : "⚠️ NOT SET"}`
-);
-
-console.log(
-  `DOG_GIF_URL: ${DOG_GIF_URL ? "✅ SET" : "⚠️ NOT SET"}`
-);
-
-console.log(
-  `HOUSE_IMAGE_URL: ${
-    HOUSE_IMAGE_URL ? "✅ SET" : "⚠️ NOT SET"
-  }`
-);
-
-console.log("======================================");
-
-if (!TOKEN) {
+if (!DISCORD_TOKEN) {
   console.error("❌ DISCORD_TOKEN is missing.");
   process.exit(1);
 }
@@ -179,9 +76,27 @@ if (!STAFF_ROLE_ID) {
   process.exit(1);
 }
 
-// ============================================================
+// ======================================================
+// EXPRESS / RENDER HEALTH SERVER
+// ======================================================
+
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Pinoy Big Sister Bot is online!");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🌐 Web server running on port ${PORT}`);
+});
+
+// ======================================================
 // DISCORD CLIENT
-// ============================================================
+// ======================================================
 
 const client = new Client({
   intents: [
@@ -190,111 +105,419 @@ const client = new Client({
   ],
 });
 
-// ============================================================
-// CUSTOM IDS
-// ============================================================
+// ======================================================
+// COMPONENT IDs
+// ======================================================
 
-const START_BUTTON_ID =
-  "start_gender_registration";
+const NICKNAME_BUTTON_ID = "request_nickname";
+const NICKNAME_MODAL_ID = "nickname_request_modal";
+const NICKNAME_INPUT_ID = "requested_nickname";
 
-const MODAL_ID =
-  "gender_registration_modal";
+const GENDER_BUTTON_ID = "request_gender_access";
+const GENDER_MENU_ID = "gender_access_selection";
 
-const GENDER_MENU_ID =
-  "gender_registration_selection";
+const APPROVE_PREFIX = "house_registration_approve";
+const REJECT_PREFIX = "house_registration_reject";
 
-const APPROVE_PREFIX =
-  "registration_approve";
-
-const REJECT_PREFIX =
-  "registration_reject";
-
-// ============================================================
+// ======================================================
 // TEMPORARY REGISTRATION STORAGE
-// ============================================================
+// ======================================================
+//
+// Stores the two parts of a registration request until
+// both Nickname + Gender have been submitted.
+//
+// Example:
+// {
+//   requestedNickname: "Mikasa",
+//   genderKey: "female",
+//   logMessageId: "...",
+//   guildId: "..."
+// }
+//
+// ======================================================
 
-const registrationNames = new Map();
+const pendingRegistrations = new Map();
 
-// ============================================================
-// ESCAPE MARKDOWN
-// ============================================================
+// Stores nicknames that were changed by the bot.
+// This prevents guildMemberUpdate from treating the bot's
+// own nickname update as a manual nickname change.
 
-function escapeMarkdown(text) {
-  return String(text || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/\*/g, "\\*")
-    .replace(/_/g, "\\_")
-    .replace(/~/g, "\\~")
-    .replace(/`/g, "\\`");
-}
+const botNicknameChanges = new Map();
 
-// ============================================================
-// GENDER LABELS
-// ============================================================
+// Stores the user's original Discord username in memory.
+// The original username is also available from member.user.username.
+const originalNames = new Map();
 
-const genderLabels = {
-  male: "♂️ Male",
-  female: "♀️ Female",
-  lgbt: "🏳️‍🌈 LGBT+",
-  prefer_not_to_say: "🔒 Prefer not to say",
+// ======================================================
+// GENDER CONFIG
+// ======================================================
+
+const GENDER_DATA = {
+  male: {
+    label: "Male",
+    emoji: "♂️",
+    roleId: MALE_ROLE_ID,
+  },
+
+  female: {
+    label: "Female",
+    emoji: "♀️",
+    roleId: FEMALE_ROLE_ID,
+  },
+
+  lgbt: {
+    label: "LGBT+",
+    emoji: "🏳️‍🌈",
+    roleId: LGBT_ROLE_ID,
+  },
+
+  prefer_not_to_say: {
+    label: "Prefer not to say",
+    emoji: "🔒",
+    roleId: PREFER_NOT_TO_SAY_ROLE_ID,
+  },
 };
 
-// ============================================================
-// MAIN EMBED
-// ============================================================
+// ======================================================
+// HELPERS
+// ======================================================
 
-function createMainEmbed() {
-  return new EmbedBuilder()
-    .setColor("#5865F2")
-    .setAuthor({
-      name: "Pinoy Big Sister",
-      iconURL: PICTURE_URL || undefined,
-    })
-    .setTitle("🏠 Private House Access")
-    .setDescription(
-      [
-        "Welcome to the **Private House Access Registration**.",
-        "",
-        "Complete the short registration form to request access to your appropriate **Room/House**.",
-        "",
-        "🔐 **PRIVATE REGISTRATION**",
-        "Your submitted information will be sent directly to the registration staff for review.",
-        "",
-        "📋 **QUESTIONS**",
-        "• Your true / preferred name",
-        "• Select your gender",
-        "",
-        "🎭 **GENDER OPTIONS**",
-        "♂️ Male",
-        "♀️ Female",
-        "🏳️‍🌈 LGBT+",
-        "🔒 Prefer not to say",
-        "",
-        "👮 **STAFF REVIEW**",
-        "Your selected gender determines which role will be given **if your registration is approved by staff**.",
-  ].join("\n")
+function cleanText(value) {
+  if (!value) return "";
+
+  return String(value)
+    .replace(/\r/g, "")
+    .replace(/\n/g, " ")
+    .trim();
+}
+
+function truncateNickname(value, maxLength = 32) {
+  value = cleanText(value);
+
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return value.substring(0, maxLength).trim();
+}
+
+function hasRole(member, roleId) {
+  if (!roleId) return false;
+
+  return member.roles.cache.has(roleId);
+}
+
+function getGenderRoleId(genderKey) {
+  return GENDER_DATA[genderKey]?.roleId || null;
+}
+
+function getGenderLabel(genderKey) {
+  const data = GENDER_DATA[genderKey];
+
+  if (!data) {
+    return "Unknown";
+  }
+
+  return `${data.emoji} ${data.label}`;
+}
+
+// ======================================================
+// NICKNAME TAG DETECTION
+// ======================================================
+//
+// Managed formats:
+//
+// Lampoon:
+// LMP.Akira
+//
+// Content Creator:
+// Akira cc
+//
+// Lampoon + CC:
+// LMP.Akira cc
+//
+// LMP Supporter:
+// Akira LMP
+//
+// Lampoon + Supporter:
+// LMP.Akira LMP
+//
+// Lampoon + CC + Supporter:
+// LMP.Akira cc LMP
+//
+// The bot removes only tags at the expected beginning/end.
+// It does NOT remove ordinary "LMP" text in the middle
+// of someone's name.
+//
+
+function stripManagedNicknameTags(nickname) {
+  let base = cleanText(nickname);
+
+  if (!base) {
+    return "";
+  }
+
+  // Remove Lampoon prefix variants
+  base = base.replace(
+    /^(?:LMP\.|lmp\.|ʟᴍᴘ\.|Lᴍᴘ\.|ʟmp\.)\s*/iu,
+    ""
+  );
+
+  // Remove Content Creator suffix
+  base = base.replace(
+    /\s+(?:cc|CC|Cc|cC|ᴄᴄ)$/u,
+    ""
+  );
+
+  // Remove LMP Supporter suffix
+  base = base.replace(
+    /\s+(?:LMP|lmp|ʟᴍᴘ)$/u,
+    ""
+  );
+
+  return cleanText(base);
+}
+
+// ======================================================
+// GET BASE NICKNAME
+// ======================================================
+
+function getBaseNickname(member) {
+  // If the member currently has no guild nickname,
+  // their original Discord username is the base.
+
+  if (!member.nickname) {
+    return cleanText(member.user.username);
+  }
+
+  const stripped = stripManagedNicknameTags(member.nickname);
+
+  if (stripped) {
+    return stripped;
+  }
+
+  return cleanText(member.user.username);
+}
+
+// ======================================================
+// BUILD MANAGED NICKNAME
+// ======================================================
+
+function buildManagedNickname(member, baseNickname) {
+  let base = cleanText(baseNickname);
+
+  if (!base) {
+    base = cleanText(member.user.username);
+  }
+
+  // Remove any old managed tags first.
+  base = stripManagedNicknameTags(base);
+
+  if (!base) {
+    base = cleanText(member.user.username);
+  }
+
+  const isLampoon = hasRole(member, LAMPOON_ROLE_ID);
+  const isContentCreator = hasRole(member, CONTENT_CREATOR_ROLE_ID);
+  const isSupporter = hasRole(member, LMP_SUPPORTER_ROLE_ID);
+
+  let prefix = "";
+  let suffixes = [];
+
+  // Lampoon
+  if (isLampoon) {
+    prefix = "LMP.";
+  }
+
+  // Content Creator
+  if (isContentCreator) {
+    suffixes.push("cc");
+  }
+
+  // LMP Supporter
+  if (isSupporter) {
+    suffixes.push("LMP");
+  }
+
+  const suffix = suffixes.length
+    ? ` ${suffixes.join(" ")}`
+    : "";
+
+  let result = `${prefix}${base}${suffix}`;
+
+  // Discord nickname maximum is 32 characters.
+  if (result.length > 32) {
+    const reservedLength = prefix.length + suffix.length;
+
+    const availableBaseLength = Math.max(
+      1,
+      32 - reservedLength
+    );
+
+    base = base.substring(0, availableBaseLength).trim();
+
+    result = `${prefix}${base}${suffix}`;
+  }
+
+  return truncateNickname(result, 32);
+}
+
+// ======================================================
+// BOT NICKNAME UPDATE
+// ======================================================
+
+async function setManagedNickname(member, baseNickname) {
+  if (!member || !member.guild) {
+    return false;
+  }
+
+  const me = member.guild.members.me;
+
+  if (!me) {
+    console.log(
+      `⚠️ Cannot find bot member in guild ${member.guild.name}`
+    );
+    return false;
+  }
+
+  if (!me.permissions.has(PermissionsBitField.Flags.ManageNicknames)) {
+    console.log(
+      `❌ Bot does not have Manage Nicknames in ${member.guild.name}`
+    );
+    return false;
+  }
+
+  if (member.id === me.id) {
+    return false;
+  }
+
+  if (!member.manageable) {
+    console.log(
+      `⚠️ Cannot manage nickname of ${member.user.tag}. ` +
+      `Check bot role hierarchy.`
+    );
+    return false;
+  }
+
+  const desiredNickname = buildManagedNickname(
+    member,
+    baseNickname
+  );
+
+  const currentNickname = member.nickname || "";
+
+  if (currentNickname === desiredNickname) {
+    return false;
+  }
+
+  try {
+    botNicknameChanges.set(member.id, desiredNickname);
+
+    await member.setNickname(
+      desiredNickname,
+      "Big Sister House nickname manager"
+    );
+
+    console.log(
+      `🏷️ Nickname updated: ${member.user.tag} → ${desiredNickname}`
+    );
+
+    // Give Discord a little time before deleting the marker.
+    setTimeout(() => {
+      botNicknameChanges.delete(member.id);
+    }, 5000);
+
+    return true;
+  } catch (error) {
+    botNicknameChanges.delete(member.id);
+
+    console.error(
+      `❌ Failed to update nickname for ${member.user.tag}:`,
+      error
+    );
+
+    return false;
+  }
+}
+
+// ======================================================
+// SYNCHRONIZE MEMBER NICKNAME
+// ======================================================
+
+async function syncMemberNickname(member, baseNickname = null) {
+  if (!member || member.user.bot) {
+    return;
+  }
+
+  if (!baseNickname) {
+    baseNickname = getBaseNickname(member);
+  }
+
+  originalNames.set(
+    member.id,
+    member.user.username
+  );
+
+  await setManagedNickname(
+    member,
+    baseNickname
   );
 }
 
-// ============================================================
+// ======================================================
+// MAIN NICKNAME EMBED
+// ======================================================
+
+function createNicknameEmbed() {
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🏷️ REQUEST NICKNAME")
+    .setDescription(
+      [
+        "**For Official Lampoon Members & Creators**",
+        "Use your **TikTok username or IGN** for easy identification.",
+        "",
+        "**For Community Members**",
+        "Use your **In-Game Name (IGN)**.",
+        "If your current server nickname already matches your IGN, **no request is needed**.",
+        "",
+        "### 📌 Nickname Format",
+        "🎭 **Lampoon** → `LMP.Akira`",
+        "🎮 **Content Creator** → `Akira cc`",
+        "🎭 + 🎮 **Lampoon + Content Creator** → `LMP.Akira cc`",
+        "",
+        "**Click below to request or update your server nickname.**",
+      ].join("\n")
+    );
+
+  if (PICTURE_URL) {
+    embed.setThumbnail(PICTURE_URL);
+  }
+
+  return embed;
+}
+
+// ======================================================
 // HOUSE GUARD EMBED
-// ============================================================
+// ======================================================
 
 function createHouseGuardEmbed() {
   const embed = new EmbedBuilder()
     .setColor("#5865F2")
-    .setTitle("🐕 HOUSE GUARD")
+    .setTitle("🐕 BIG SISTER HOUSE • HOUSE GUARD")
     .setDescription(
       [
         "🚨 **Beware of the Barking Dogs!**",
         "",
-        "🐕 The House Guards are watching the outside of the house.",
+        "🐕 The House Guards protect the Big Sister House and watch the outside of the house.",
         "",
-        "🔊 Unauthorized attempts to enter restricted areas may attract the attention of the House Guards.",
+        "🔊 Unauthorized attempts to enter restricted areas may attract their attention.",
         "",
-        "🚪 Please respect the house boundaries.",
+        "🚪 Please respect the **House boundaries**.",
+        "",
+        "> ||🐕 **The House Guards are watching...**||",
       ].join("\n")
-    )
+    );
 
   if (DOG_GIF_URL) {
     embed.setThumbnail(DOG_GIF_URL);
@@ -303,9 +526,9 @@ function createHouseGuardEmbed() {
   return embed;
 }
 
-// ============================================================
-// HOUSE IMAGE EMBED
-// ============================================================
+// ======================================================
+// GENDER ACCESS EMBED
+// ======================================================
 
 function createGenderAccessEmbed() {
   const embed = new EmbedBuilder()
@@ -313,17 +536,26 @@ function createGenderAccessEmbed() {
     .setTitle("🏠 BIG SISTER HOUSE • GENDER ACCESS")
     .setDescription(
       [
-        "Your approved gender role determines which private **Room/House** you can access.",
+        "Your approved **gender role** determines which private **Room/House** you can access.",
         "",
-        "🔐 The appropriate role will only be granted after a staff member reviews and approves your registration.",
+        "### 🔐 ACCESS",
+        "Choose the gender category that applies to you.",
+        "Your request will be reviewed by **Registration Staff** before access is granted.",
         "",
-        "🏠 Please remain in your assigned **Room/House** and respect the access boundaries.",
+        "♂️ **Male**",
+        "♀️ **Female**",
+        "🏳️‍🌈 **LGBT+**",
+        "🔒 **Prefer not to say**",
+        "",
+        "> ||🔐 **Access is granted only after staff approval.**||",
+        "",
+        "### 🏠 HOUSE RULES",
+        "Please remain in your assigned **Room/House** and respect the access boundaries.",
       ].join("\n")
     )
     .setFooter({
       text: "Pinoy Big Sister • Private House Access",
-    })
-    .setTimestamp();
+    });
 
   if (HOUSE_IMAGE_URL) {
     embed.setImage(HOUSE_IMAGE_URL);
@@ -332,821 +564,286 @@ function createGenderAccessEmbed() {
   return embed;
 }
 
-// ============================================================
-// START BUTTON
-// ============================================================
-
-function createStartButton() {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(START_BUTTON_ID)
-      .setLabel("Start Registration")
-      .setEmoji("🔐")
-      .setStyle(ButtonStyle.Primary)
-  );
-}
-
-// ============================================================
-// REGISTRATION MODAL
-// ============================================================
-
-function createRegistrationModal() {
-  const nameInput = new TextInputBuilder()
-    .setCustomId("true_name")
-    .setLabel("True / Preferred Name")
-    .setPlaceholder("Enter your name")
-    .setStyle(TextInputStyle.Short)
-    .setRequired(true)
-    .setMinLength(1)
-    .setMaxLength(100);
-
-  return new ModalBuilder()
-    .setCustomId(MODAL_ID)
-    .setTitle("Private House Registration")
-    .addComponents(
-      new ActionRowBuilder().addComponents(
-        nameInput
-      )
-    );
-}
-
-// ============================================================
-// GENDER SELECT MENU
-// ============================================================
-
-function createGenderSelectMenu() {
-  return new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId(GENDER_MENU_ID)
-      .setPlaceholder("Select your gender")
-      .setMinValues(1)
-      .setMaxValues(1)
-      .addOptions(
-        {
-          label: "Male",
-          description: "Select Male",
-          value: "male",
-          emoji: "♂️",
-        },
-        {
-          label: "Female",
-          description: "Select Female",
-          value: "female",
-          emoji: "♀️",
-        },
-        {
-          label: "LGBT+",
-          description: "Select LGBT+",
-          value: "lgbt",
-          emoji: "🏳️‍🌈",
-        },
-        {
-          label: "Prefer not to say",
-          description: "Choose not to disclose your gender",
-          value: "prefer_not_to_say",
-          emoji: "🔒",
-        }
-      )
-  );
-}
-
-// ============================================================
-// STAFF BUTTONS
-// ============================================================
-
-function createStaffButtons(userId, gender) {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(
-        `${APPROVE_PREFIX}:${userId}:${gender}`
-      )
-      .setLabel("Accept")
-      .setEmoji("✅")
-      .setStyle(ButtonStyle.Success),
-
-    new ButtonBuilder()
-      .setCustomId(
-        `${REJECT_PREFIX}:${userId}:${gender}`
-      )
-      .setLabel("Reject")
-      .setEmoji("❌")
-      .setStyle(ButtonStyle.Danger)
-  );
-}
-
-// ============================================================
-// DISABLED DECISION BUTTON
-// ============================================================
-
-function createDecisionButtons(decision) {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId("registration_decision")
-      .setLabel(
-        decision === "APPROVED"
-          ? "Accepted"
-          : "Rejected"
-      )
-      .setEmoji(
-        decision === "APPROVED"
-          ? "✅"
-          : "❌"
-      )
-      .setStyle(
-        decision === "APPROVED"
-          ? ButtonStyle.Success
-          : ButtonStyle.Danger
-      )
-      .setDisabled(true)
-  );
-}
-
-// ============================================================
-// GET ROLE
-// ============================================================
-
-function getGenderRole(guild, gender) {
-  const roleId = ROLE_IDS[gender];
-
-  if (!roleId) {
-    return null;
-  }
-
-  return guild.roles.cache.get(roleId) || null;
-}
-
-// ============================================================
-// SEND REGISTRATION TO LOG
-// ============================================================
-
-async function sendRegistrationToLog({
-  interaction,
-  trueName,
-  gender,
-}) {
-  const logChannel =
-    await client.channels.fetch(
-      LOG_CHANNEL_ID
-    );
-
-  if (
-    !logChannel ||
-    !logChannel.isTextBased()
-  ) {
-    throw new Error(
-      "LOG_CHANNEL_ID is not a text channel."
-    );
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor("#FEE75C")
-    .setAuthor({
-      name: "Pinoy Big Sister",
-      iconURL: PICTURE_URL || undefined,
-    })
-    .setTitle(
-      "📋 New Gender Registration"
-    )
-    .setDescription(
-      [
-        "A member has submitted a new registration.",
-        "",
-        "👮 **Staff Review Required**",
-        "Please review the information below and choose **Accept** or **Reject**.",
-      ].join("\n")
-    )
-    .addFields(
-      {
-        name: "👤 Applicant",
-        value:
-          `${interaction.user}\n\`${interaction.user.tag}\`\n\`${interaction.user.id}\``,
-        inline: false,
-      },
-      {
-        name: "📝 True / Preferred Name",
-        value:
-          escapeMarkdown(trueName).slice(
-            0,
-            1024
-          ),
-        inline: false,
-      },
-      {
-        name: "🎭 Selected Gender",
-        value:
-          genderLabels[gender] ||
-          "Unknown",
-        inline: true,
-      },
-      {
-        name: "📝 Status",
-        value: "⏳ **PENDING**",
-        inline: true,
-      }
-    )
-    .setFooter({
-      text:
-        "Gender Registration • Staff Review",
-    })
-    .setTimestamp();
-
-  return await logChannel.send({
-    content:
-      `<@&${STAFF_ROLE_ID}>`,
-    embeds: [embed],
-    components: [
-      createStaffButtons(
-        interaction.user.id,
-        gender
-      ),
-    ],
-  });
-}
-
-// ============================================================
-// NICKNAME / ROLE LOGGING
-// ============================================================
-
-async function sendNicknameLog({
-  action,
-  member,
-  actor,
-  role = null,
-  oldNickname = null,
-  newNickname = null,
-  reason = null,
-}) {
-  try {
-    if (!NICKNAME_LOG_CHANNEL_ID) {
-      console.log(
-        "⚠️ NICKNAME_LOG_CHANNEL_ID is not configured."
-      );
-
-      return;
-    }
-
-    const channel =
-      await client.channels.fetch(
-        NICKNAME_LOG_CHANNEL_ID
-      );
-
-    if (
-      !channel ||
-      !channel.isTextBased()
-    ) {
-      console.log(
-        "⚠️ NICKNAME_LOG_CHANNEL_ID is not a valid text channel."
-      );
-
-      return;
-    }
-
-    const embed =
-      new EmbedBuilder()
-        .setTimestamp();
-
-    // ========================================================
-    // ROLE ADDED
-    // ========================================================
-
-    if (action === "role_add") {
-      embed
-        .setColor("#57F287")
-        .setTitle("➕ ROLE ADDED")
-        .addFields(
-          {
-            name: "👤 Member",
-            value:
-              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
-            inline: false,
-          },
-          {
-            name: "🎭 Role",
-            value: `${role}`,
-            inline: true,
-          },
-          {
-            name: "👮 Added By",
-            value:
-              `${actor}\n\`${actor.user.tag}\``,
-            inline: true,
-          }
-        );
-    }
-
-    // ========================================================
-    // ROLE REMOVED
-    // ========================================================
-
-    else if (action === "role_remove") {
-      embed
-        .setColor("#ED4245")
-        .setTitle("➖ ROLE REMOVED")
-        .addFields(
-          {
-            name: "👤 Member",
-            value:
-              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
-            inline: false,
-          },
-          {
-            name: "🎭 Role",
-            value: `${role}`,
-            inline: true,
-          },
-          {
-            name: "👮 Removed By",
-            value:
-              `${actor}\n\`${actor.user.tag}\``,
-            inline: true,
-          }
-        );
-    }
-
-    // ========================================================
-    // NICKNAME CHANGED
-    // ========================================================
-
-    else if (action === "nickname") {
-      embed
-        .setColor("#5865F2")
-        .setTitle("🏷️ NICKNAME CHANGED")
-        .addFields(
-          {
-            name: "👤 Member",
-            value:
-              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
-            inline: false,
-          },
-          {
-            name: "⬅️ Previous",
-            value:
-              oldNickname
-                ? `\`${oldNickname}\``
-                : "`None`",
-            inline: true,
-          },
-          {
-            name: "➡️ New",
-            value:
-              newNickname
-                ? `\`${newNickname}\``
-                : "`None`",
-            inline: true,
-          },
-          {
-            name: "👮 Changed By",
-            value:
-              `${actor}\n\`${actor.user.tag}\``,
-            inline: true,
-          }
-        );
-    }
-
-    if (reason) {
-      embed.addFields({
-        name: "📝 Reason",
-        value: String(reason).slice(0, 1024),
-        inline: false,
-      });
-    }
-
-    embed.setFooter({
-      text:
-        "Pinoy Big Sister • Nickname & Role Management",
-    });
-
-    await channel.send({
-      embeds: [embed],
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Nickname/role log error:",
-      error
-    );
-  }
-}
-
-// ============================================================
-// NICKNAME MANAGER
-// ============================================================
-
-// Tracks nickname changes made by this bot so they can
-// be distinguished from manual nickname changes.
-const botNicknameChanges = new Map();
-
-// ============================================================
-// NICKNAME TAG CLEANER
-// ============================================================
-
-function getBaseNickname(member) {
-  const currentNickname =
-    member.nickname ||
-    member.user.username;
-
-  let base = String(currentNickname)
-    .trim();
-
-  // ----------------------------------------------------------
-  // Remove Lampoon prefixes
-  // Examples:
-  // LMP.Akira
-  // lmp.Akira
-  // ʟᴍᴘ.Akira
-  // Lᴍᴘ.Akira
-  // ----------------------------------------------------------
-
-  base = base.replace(
-    /^(?:LMP\.|lmp\.|ʟᴍᴘ\.|Lᴍᴘ\.)/i,
-    ""
-  );
-
-  // ----------------------------------------------------------
-  // Remove Content Creator suffix
-  // Examples:
-  // Akira cc
-  // Akira CC
-  // Akira Cc
-  // Akira cC
-  // ----------------------------------------------------------
-
-  base = base.replace(
-    /\s+(?:cc|CC|Cc|cC)$/i,
-    ""
-  );
-
-  // ----------------------------------------------------------
-  // Remove LMP Supporter suffix
-  // Examples:
-  // Akira LMP
-  // Akira lmp
-  // Akira ʟᴍᴘ
-  // ----------------------------------------------------------
-
-  base = base.replace(
-    /\s+(?:LMP|lmp|ʟᴍᴘ)$/i,
-    ""
-  );
-
-  // ----------------------------------------------------------
-  // Clean extra spaces
-  // ----------------------------------------------------------
-
-  base = base
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  // ----------------------------------------------------------
-  // Fallback to Discord username
-  // ----------------------------------------------------------
-
-  if (!base) {
-    base = member.user.username;
-  }
-
-  return base.slice(0, 32);
-}
-
-// ============================================================
-// BUILD MANAGED NICKNAME
-// ============================================================
-
-function buildManagedNickname(
-  member,
-  baseNickname = null
-) {
-  let base =
-    baseNickname ||
-    getBaseNickname(member);
-
-  base = String(base)
-    .replace(
-      /^(?:LMP\.|lmp\.|ʟᴍᴘ\.|Lᴍᴘ\.)/i,
-      ""
-    )
-    .replace(
-      /\s+(?:cc|CC|Cc|cC)$/i,
-      ""
-    )
-    .replace(
-      /\s+(?:LMP|lmp|ʟᴍᴘ)$/i,
-      ""
-    )
-    .trim();
-
-  if (!base) {
-    base = member.user.username;
-  }
-
-  base = base.slice(0, 32);
-
-  // ----------------------------------------------------------
-  // Detect roles
-  // ----------------------------------------------------------
-
-  const hasLampoon =
-    Boolean(
-      LAMPOON_ROLE_ID &&
-      member.roles.cache.has(
-        LAMPOON_ROLE_ID
-      )
-    );
-
-  const hasContentCreator =
-    Boolean(
-      CONTENT_CREATOR_ROLE_ID &&
-      member.roles.cache.has(
-        CONTENT_CREATOR_ROLE_ID
-      )
-    );
-
-  const hasLmpSupporter =
-    Boolean(
-      LMP_SUPPORTER_ROLE_ID &&
-      member.roles.cache.has(
-        LMP_SUPPORTER_ROLE_ID
-      )
-    );
-
-  // ----------------------------------------------------------
-  // Build nickname
-  // ----------------------------------------------------------
-
-  let nickname = base;
-
-  // Lampoon + CC + LMP Supporter
-  if (
-    hasLampoon &&
-    hasContentCreator &&
-    hasLmpSupporter
-  ) {
-    nickname =
-      `LMP.${base} cc LMP`;
-  }
-
-  // Lampoon + CC
-  else if (
-    hasLampoon &&
-    hasContentCreator
-  ) {
-    nickname =
-      `LMP.${base} cc`;
-  }
-
-  // Lampoon + LMP Supporter
-  else if (
-    hasLampoon &&
-    hasLmpSupporter
-  ) {
-    nickname =
-      `LMP.${base} LMP`;
-  }
-
-  // Lampoon only
-  else if (
-    hasLampoon
-  ) {
-    nickname =
-      `LMP.${base}`;
-  }
-
-  // Content Creator only
-  else if (
-    hasContentCreator
-  ) {
-    nickname =
-      `${base} cc`;
-  }
-
-  // LMP Supporter only
-  else if (
-    hasLmpSupporter
-  ) {
-    nickname =
-      `${base} LMP`;
-  }
-
-  // ----------------------------------------------------------
-  // Discord nickname limit
-  // ----------------------------------------------------------
-
-  return nickname.slice(0, 32);
-}
-
-// ============================================================
-// SET MANAGED NICKNAME
-// ============================================================
-
-async function setManagedNickname(
-  member,
-  nickname,
-  reason = "Big Sister House nickname synchronization"
-) {
-  if (!member) {
-    return false;
-  }
-
-  if (!member.manageable) {
-    console.log(
-      `⚠️ Cannot manage nickname for ${member.user.tag}`
-    );
-
-    return false;
-  }
-
-  const botMember =
-    member.guild.members.me ||
-    await member.guild.members.fetchMe();
-
-  if (
-    !botMember.permissions.has(
-      PermissionsBitField.Flags.ManageNicknames
-    )
-  ) {
-    console.log(
-      "⚠️ Bot does not have Manage Nicknames permission."
-    );
-
-    return false;
-  }
-
-  const oldNickname =
-    member.nickname || null;
-
-  if (
-    oldNickname === nickname
-  ) {
-    return false;
-  }
-
-  // Mark this nickname change as made by the bot.
-  botNicknameChanges.set(
-    member.id,
-    {
-      oldNickname,
-      newNickname: nickname,
-      createdAt: Date.now(),
-    }
-  );
-
-  try {
-    await member.setNickname(
-      nickname,
-      reason
-    );
-
-    // --------------------------------------------------------
-    // Log nickname change
-    // --------------------------------------------------------
-
-    await sendNicknameLog({
-      action: "nickname",
-      member,
-      actor: botMember,
-      oldNickname,
-      newNickname: nickname,
-      reason,
-    });
-
-    return true;
-
-  } catch (error) {
-    botNicknameChanges.delete(
-      member.id
-    );
-
-    console.error(
-      `❌ Failed to change nickname for ${member.user.tag}:`,
-      error
-    );
-
-    return false;
-  } finally {
-    setTimeout(() => {
-      botNicknameChanges.delete(
-        member.id
-      );
-    }, 5000);
-  }
-}
-
-// ============================================================
-// SYNCHRONIZE MEMBER NICKNAME
-// ============================================================
-
-async function syncMemberNickname(
-  member,
-  forcedBaseNickname = null
-) {
-  if (!member) {
-    return null;
-  }
-
-  const baseNickname =
-    forcedBaseNickname ||
-    getBaseNickname(member);
-
-  const newNickname =
-    buildManagedNickname(
-      member,
-      baseNickname
-    );
-
-  await setManagedNickname(
-    member,
-    newNickname,
-    forcedBaseNickname
-      ? "Nickname reset command"
-      : "Big Sister House nickname synchronization"
-  );
-
-  return newNickname;
-}
-
-// ============================================================
-// NICKNAME PANEL EMBED
-// ============================================================
-
-function createNicknameEmbed() {
-  return new EmbedBuilder()
-    .setColor("#5865F2")
-    .setTitle("🏷️ REQUEST NICKNAME")
-    .setDescription(
-      [
-        "Welcome to the **Big Sister House Nickname Manager**.",
-        "",
-        "Your nickname is automatically synchronized according to your assigned House roles.",
-        "",
-        "### 🏷️ Nickname Rules",
-        "",
-        "🎭 **Lampoon**",
-        "`LMP.Username`",
-        "",
-        "🎮 **Content Creator**",
-        "`Username cc`",
-        "",
-        "🏷️ **LMP Supporter**",
-        "`Username LMP`",
-        "",
-        "🎭 **Lampoon + Content Creator**",
-        "`LMP.Username cc`",
-        "",
-        "🏷️ **Lampoon + LMP Supporter**",
-        "`LMP.Username LMP`",
-        "",
-        "🎮 **Lampoon + Content Creator + LMP Supporter**",
-        "`LMP.Username cc LMP`",
-        "",
-        "Your nickname may be synchronized whenever your managed roles change.",
-      ].join("\n")
-    )
-    .setFooter({
-      text:
-        "Pinoy Big Sister • Nickname Management",
-    })
-    .setTimestamp();
-}
-
-// ============================================================
-// NICKNAME BUTTON ROW
-// ============================================================
+// ======================================================
+// PANEL BUTTONS
+// ======================================================
 
 function createNicknameButtonRow() {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(
-        "nickname_sync_self"
-      )
-      .setLabel("Sync My Nickname")
+      .setCustomId(NICKNAME_BUTTON_ID)
+      .setLabel("Request Nickname")
       .setEmoji("🏷️")
       .setStyle(ButtonStyle.Primary)
   );
 }
 
-// ============================================================
-// GENDER ACCESS BUTTON ROW
-// ============================================================
-
 function createGenderButtonRow() {
-  return createStartButton();
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(GENDER_BUTTON_ID)
+      .setLabel("Request Gender Access")
+      .setEmoji("🔐")
+      .setStyle(ButtonStyle.Primary)
+  );
 }
 
-// ============================================================
+// ======================================================
+// GENDER SELECT MENU
+// ======================================================
+
+function createGenderSelectRow() {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(GENDER_MENU_ID)
+    .setPlaceholder("Select your gender category")
+    .addOptions(
+      {
+        label: "Male",
+        value: "male",
+        emoji: "♂️",
+      },
+      {
+        label: "Female",
+        value: "female",
+        emoji: "♀️",
+      },
+      {
+        label: "LGBT+",
+        value: "lgbt",
+        emoji: "🏳️‍🌈",
+      },
+      {
+        label: "Prefer not to say",
+        value: "prefer_not_to_say",
+        emoji: "🔒",
+      }
+    );
+
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+// ======================================================
+// STAFF LOG EMBED
+// ======================================================
+
+function createRegistrationLogEmbed(
+  member,
+  registration
+) {
+  const nickname =
+    registration.requestedNickname || "⏳ Not submitted";
+
+  const gender =
+    registration.genderKey
+      ? getGenderLabel(registration.genderKey)
+      : "⏳ Not submitted";
+
+  const complete =
+    Boolean(
+      registration.requestedNickname &&
+      registration.genderKey
+    );
+
+  const embed = new EmbedBuilder()
+    .setColor(complete ? "#5865F2" : "#FEE75C")
+    .setTitle("📋 BIG SISTER HOUSE • REGISTRATION")
+    .addFields(
+      {
+        name: "👤 Applicant",
+        value: `<@${member.id}>`,
+        inline: false,
+      },
+      {
+        name: "🏷️ Requested Nickname",
+        value: `\`${nickname}\``,
+        inline: true,
+      },
+      {
+        name: "🎭 Gender",
+        value: gender,
+        inline: true,
+      },
+      {
+        name: "📌 Status",
+        value: complete
+          ? "⏳ **PENDING STAFF REVIEW**"
+          : "⏳ **WAITING FOR OTHER REQUEST**",
+        inline: false,
+      }
+    )
+    .setTimestamp();
+
+  return embed;
+}
+
+// ======================================================
+// STAFF BUTTONS
+// ======================================================
+
+function createStaffDecisionRow(userId, enabled = true) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`${APPROVE_PREFIX}:${userId}`)
+      .setLabel("Accept")
+      .setEmoji("✅")
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(!enabled),
+
+    new ButtonBuilder()
+      .setCustomId(`${REJECT_PREFIX}:${userId}`)
+      .setLabel("Reject")
+      .setEmoji("❌")
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(!enabled)
+  );
+}
+
+// ======================================================
+// FIND OR CREATE REGISTRATION LOG
+// ======================================================
+
+async function saveRegistrationLog(
+  member,
+  registration
+) {
+  const logChannel = member.guild.channels.cache.get(
+    LOG_CHANNEL_ID
+  );
+
+  if (!logChannel) {
+    throw new Error(
+      "LOG_CHANNEL_ID channel was not found."
+    );
+  }
+
+  const embed = createRegistrationLogEmbed(
+    member,
+    registration
+  );
+
+  const complete =
+    Boolean(
+      registration.requestedNickname &&
+      registration.genderKey
+    );
+
+  const existingMessageId =
+    registration.logMessageId;
+
+  // Try updating the existing log.
+  if (existingMessageId) {
+    try {
+      const existingMessage =
+        await logChannel.messages.fetch(
+          existingMessageId
+        );
+
+      await existingMessage.edit({
+        content: `<@&${STAFF_ROLE_ID}>`,
+        embeds: [embed],
+        components: [
+          createStaffDecisionRow(
+            member.id,
+            complete
+          ),
+        ],
+      });
+
+      return existingMessage;
+    } catch (error) {
+      console.log(
+        "ℹ️ Existing registration log could not be updated. Creating a new one."
+      );
+    }
+  }
+
+  // Create a new combined log.
+  const message = await logChannel.send({
+    content: `<@&${STAFF_ROLE_ID}>`,
+    embeds: [embed],
+    components: [
+      createStaffDecisionRow(
+        member.id,
+        complete
+      ),
+  });
+
+  registration.logMessageId = message.id;
+
+  return message;
+}
+
+// ======================================================
+// UPDATE REGISTRATION DATA
+// ======================================================
+
+async function updateRegistration(
+  member,
+  changes
+) {
+  let registration =
+    pendingRegistrations.get(member.id);
+
+  if (!registration) {
+    registration = {
+      requestedNickname: null,
+      genderKey: null,
+      logMessageId: null,
+      guildId: member.guild.id,
+      createdAt: Date.now(),
+    };
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      changes,
+      "requestedNickname"
+    )
+  ) {
+    registration.requestedNickname =
+      changes.requestedNickname;
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      changes,
+      "genderKey"
+    )
+  ) {
+    registration.genderKey =
+      changes.genderKey;
+  }
+
+  pendingRegistrations.set(
+    member.id,
+    registration
+  );
+
+  await saveRegistrationLog(
+    member,
+    registration
+  );
+
+  return registration;
+}
+
+// ======================================================
 // SLASH COMMAND DEFINITIONS
-// ============================================================
+// ======================================================
 
 const slashCommands = [
   new SlashCommandBuilder()
     .setName("nickname")
     .setDescription("Manage Big Sister House nicknames")
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("setup")
         .setDescription(
-          "Create or update the Big Sister House panels"
+          "Create or update the three Big Sister House panels"
         )
     )
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("sync")
@@ -1156,39 +853,35 @@ const slashCommands = [
         .addUserOption((option) =>
           option
             .setName("member")
-            .setDescription(
-              "Member to synchronize"
-            )
+            .setDescription("Member to synchronize")
             .setRequired(true)
         )
     )
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("cleanup")
         .setDescription(
-          "Remove managed nickname tags"
+          "Remove managed nickname tags from a member"
         )
         .addUserOption((option) =>
           option
             .setName("member")
-            .setDescription(
-              "Member to clean"
-            )
+            .setDescription("Member to clean")
             .setRequired(true)
         )
     )
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("reset")
         .setDescription(
-          "Reset the member nickname"
+          "Reset a member's nickname to their Discord username"
         )
         .addUserOption((option) =>
           option
             .setName("member")
-            .setDescription(
-              "Member to reset"
-            )
+            .setDescription("Member to reset")
             .setRequired(true)
         )
     ),
@@ -1196,12 +889,11 @@ const slashCommands = [
   new SlashCommandBuilder()
     .setName("role")
     .setDescription("Manage member roles")
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("add")
-        .setDescription(
-          "Add a role to a member"
-        )
+        .setDescription("Add a role to a member")
         .addUserOption((option) =>
           option
             .setName("member")
@@ -1211,18 +903,15 @@ const slashCommands = [
         .addRoleOption((option) =>
           option
             .setName("role")
-            .setDescription(
-              "Role to add"
-            )
+            .setDescription("Role to add")
             .setRequired(true)
         )
     )
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("remove")
-        .setDescription(
-          "Remove a role from a member"
-        )
+        .setDescription("Remove a role from a member")
         .addUserOption((option) =>
           option
             .setName("member")
@@ -1232,12 +921,11 @@ const slashCommands = [
         .addRoleOption((option) =>
           option
             .setName("role")
-            .setDescription(
-              "Role to remove"
-            )
+            .setDescription("Role to remove")
             .setRequired(true)
         )
     )
+
     .addSubcommand((subcommand) =>
       subcommand
         .setName("info")
@@ -1251,58 +939,31 @@ const slashCommands = [
             .setRequired(true)
         )
     ),
-].map((command) =>
-  command.toJSON()
-);
+].map((command) => command.toJSON());
 
-// ============================================================
-// READY
-// ============================================================
+// ======================================================
+// DISCORD READY
+// ======================================================
 
 client.once("clientReady", async () => {
-  console.log(
-    "======================================"
-  );
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
-  console.log(
-    "🚀 GENDER REGISTRATION BOT STARTED"
-  );
-
-  console.log(
-    "======================================"
-  );
-
-  console.log(
-    `🤖 Logged in as: ${client.user.tag}`
-  );
-
-  console.log(
-    `🆔 Bot ID: ${client.user.id}`
-  );
-
-  console.log(
-    `🏠 Servers: ${client.guilds.cache.size}`
-  );
-
-  // ==========================================================
+    // ====================================================
   // REGISTER SLASH COMMANDS
-  // ==========================================================
+  // ====================================================
 
   try {
-    const guild =
-      client.guilds.cache.first();
+    const guild = client.guilds.cache.first();
 
     if (guild) {
-      await guild.commands.set(
-        slashCommands
-      );
+      await guild.commands.set(slashCommands);
 
       console.log(
         `✅ Slash commands registered in: ${guild.name}`
       );
     } else {
       console.log(
-        "⚠️ No Discord server found for slash command registration."
+        "⚠️ No Discord server found for slash commands."
       );
     }
   } catch (error) {
@@ -1311,636 +972,125 @@ client.once("clientReady", async () => {
       error
     );
   }
-
-  await sendRegistrationPanel();
-});
-
-// ============================================================
-// SEND MAIN PANEL
-// ============================================================
-
-async function sendRegistrationPanel() {
+  
   try {
     const channel =
-      await client.channels.fetch(
-        CHANNEL_ID
-      );
+      await client.channels.fetch(CHANNEL_ID);
 
-    if (
-      !channel ||
-      !channel.isTextBased()
-    ) {
+    if (!channel || !channel.isTextBased()) {
       console.error(
-        "❌ CHANNEL_ID is not a text channel."
+        "❌ CHANNEL_ID is not a valid text channel."
       );
-
       return;
     }
-
-    await channel.send({
-      embeds: [
-  createMainEmbed(),
-  createHouseGuardEmbed(),
-  createGenderAccessEmbed(),
-],
-      components: [
-        createStartButton(),
-      ],
-    });
 
     console.log(
-      "✅ Registration panel sent."
+      `📌 Preparing Big Sister House panel in #${channel.name}`
     );
 
-  } catch (error) {
-    console.error(
-      "❌ Failed to send registration panel:"
-    );
+    // Fetch recent messages so we can avoid creating
+    // duplicate panels every time Render restarts.
+    const messages =
+      await channel.messages.fetch({
+        limit: 100,
+      });
 
-    console.error(error);
-  }
-}
+    // --------------------------------------------------
+    // NICKNAME PANEL
+    // --------------------------------------------------
 
-// ============================================================
-// INTERACTIONS
-// ============================================================
-
-client.on(
-  "interactionCreate",
-  async (interaction) => {
-    
-// ========================================================
-// NICKNAME SELF SYNC BUTTON
-// ========================================================
-
-if (
-  interaction.isButton() &&
-  interaction.customId ===
-    "nickname_sync_self"
-) {
-  try {
-    const member =
-      await interaction.guild.members.fetch(
-        interaction.user.id
+    let nicknameMessage =
+      messages.find((message) =>
+        message.author.id === client.user.id &&
+        message.embeds.some(
+          (embed) =>
+            embed.title === "🏷️ REQUEST NICKNAME"
+        )
       );
 
-    const nickname =
-      await syncMemberNickname(
-        member
+    if (nicknameMessage) {
+      await nicknameMessage.edit({
+        embeds: [createNicknameEmbed()],
+        components: [createNicknameButtonRow()],
+      });
+
+      console.log("♻️ Updated existing Nickname panel.");
+    } else {
+      nicknameMessage = await channel.send({
+        embeds: [createNicknameEmbed()],
+        components: [createNicknameButtonRow()],
+      });
+
+      console.log("✅ Created Nickname panel.");
+    }
+
+    // --------------------------------------------------
+    // HOUSE GUARD PANEL
+    // --------------------------------------------------
+
+    let guardMessage =
+      messages.find((message) =>
+        message.author.id === client.user.id &&
+        message.embeds.some(
+          (embed) =>
+            embed.title ===
+            "🐕 BIG SISTER HOUSE • HOUSE GUARD"
+        )
       );
 
-    await interaction.reply({
-      content:
-        `✅ Your nickname has been synchronized.\n🏷️ Current nickname: \`${nickname}\``,
-      ephemeral: true,
-    });
+    if (guardMessage) {
+      await guardMessage.edit({
+        embeds: [createHouseGuardEmbed()],
+        components: [],
+      });
 
+      console.log("♻️ Updated existing House Guard panel.");
+    } else {
+      guardMessage = await channel.send({
+        embeds: [createHouseGuardEmbed()],
+      });
+
+      console.log("✅ Created House Guard panel.");
+    }
+
+    // --------------------------------------------------
+    // GENDER ACCESS PANEL
+    // --------------------------------------------------
+
+    let genderMessage =
+      messages.find((message) =>
+        message.author.id === client.user.id &&
+        message.embeds.some(
+          (embed) =>
+            embed.title ===
+            "🏠 BIG SISTER HOUSE • GENDER ACCESS"
+        )
+      );
+
+    if (genderMessage) {
+      await genderMessage.edit({
+        embeds: [createGenderAccessEmbed()],
+        components: [createGenderButtonRow()],
+      });
+
+      console.log("♻️ Updated existing Gender Access panel.");
+    } else {
+      genderMessage = await channel.send({
+        embeds: [createGenderAccessEmbed()],
+        components: [createGenderButtonRow()],
+      });
+
+      console.log("✅ Created Gender Access panel.");
+    }
+
+    console.log("🏠 Big Sister House panels are ready.");
   } catch (error) {
     console.error(
-      "❌ Nickname self-sync failed:",
+      "❌ Failed to create/update Big Sister House panels:",
       error
     );
-
-    if (
-      !interaction.replied &&
-      !interaction.deferred
-    ) {
-      await interaction.reply({
-        content:
-          "❌ I could not synchronize your nickname.",
-        ephemeral: true,
-      }).catch(() => {});
-    }
   }
-
-  return;
-}
-
-    // ========================================================
-    // START REGISTRATION
-    // ========================================================
-
-    if (
-      interaction.isButton() &&
-      interaction.customId ===
-        START_BUTTON_ID
-    ) {
-      try {
-        await interaction.showModal(
-          createRegistrationModal()
-        );
-      } catch (error) {
-        console.error(
-          "❌ Could not open registration modal:",
-          error
-        );
-      }
-
-      return;
-    }
-
-    // ========================================================
-    // MODAL SUBMISSION
-    // ========================================================
-
-    if (
-      interaction.isModalSubmit() &&
-      interaction.customId ===
-        MODAL_ID
-    ) {
-      try {
-        const trueName =
-          interaction.fields
-            .getTextInputValue(
-              "true_name"
-            )
-            .trim();
-
-        if (!trueName) {
-          await interaction.reply({
-            content:
-              "❌ Please enter your name.",
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-        registrationNames.set(
-          interaction.user.id,
-          {
-            trueName,
-            createdAt: Date.now(),
-          }
-        );
-
-        await interaction.reply({
-          content:
-            "### 🎭 Select Your Gender\n\nChoose the gender you are registering under:",
-          components: [
-            createGenderSelectMenu(),
-          ],
-          ephemeral: true,
-        });
-
-      } catch (error) {
-        console.error(
-          "❌ Modal submission failed:",
-          error
-        );
-
-        if (
-          !interaction.replied &&
-          !interaction.deferred
-        ) {
-          await interaction.reply({
-            content:
-              "❌ Something went wrong.",
-            ephemeral: true,
-          }).catch(() => {});
-        }
-      }
-
-      return;
-    }
-
-    // ========================================================
-    // GENDER SELECTION
-    // ========================================================
-
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId ===
-        GENDER_MENU_ID
-    ) {
-      try {
-        const gender =
-          interaction.values[0];
-
-        const stored =
-          registrationNames.get(
-            interaction.user.id
-          );
-
-        if (!stored) {
-          await interaction.update({
-            content:
-              "❌ Your registration session expired. Please start again.",
-            components: [],
-          });
-
-          return;
-        }
-
-        const trueName =
-          stored.trueName;
-
-        await sendRegistrationToLog({
-          interaction,
-          trueName,
-          gender,
-        });
-
-        registrationNames.delete(
-          interaction.user.id
-        );
-
-        await interaction.update({
-          content:
-            [
-              "✅ **Registration Submitted!**",
-              "",
-              `📝 Name: **${trueName}**`,
-              `🎭 Gender: **${genderLabels[gender]}**`,
-              "",
-              "Your registration has been sent to the registration staff.",
-              "",
-              "⏳ Please wait for staff to accept or reject your registration.",
-            ].join("\n"),
-          components: [],
-        });
-
-        console.log(
-          `📥 ${interaction.user.tag} submitted ${gender} registration.`
-        );
-
-      } catch (error) {
-        console.error(
-          "❌ Gender selection failed:",
-          error
-        );
-
-        await interaction.update({
-          content:
-            "❌ Something went wrong while submitting your registration.",
-          components: [],
-        }).catch(() => {});
-      }
-
-      return;
-    }
-
-    // ========================================================
-    // STAFF ACCEPT / REJECT
-    // ========================================================
-
-    if (
-      interaction.isButton() &&
-      (
-        interaction.customId.startsWith(
-          `${APPROVE_PREFIX}:`
-        ) ||
-        interaction.customId.startsWith(
-          `${REJECT_PREFIX}:`
-        )
-      )
-    ) {
-      try {
-        if (!interaction.guild) {
-          return;
-        }
-
-        // ----------------------------------------------------
-        // STAFF PERMISSION
-        // ----------------------------------------------------
-
-        if (
-          !interaction.member.roles.cache.has(
-            STAFF_ROLE_ID
-          )
-        ) {
-          await interaction.reply({
-            content:
-              "❌ You do not have permission to review registration requests.",
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-        // ----------------------------------------------------
-        // PARSE BUTTON
-        // ----------------------------------------------------
-
-        const parts =
-          interaction.customId.split(":");
-
-        const applicantId = parts[1];
-        const gender = parts[2];
-
-        if (!applicantId || !gender) {
-          await interaction.reply({
-            content:
-              "❌ Registration information is missing.",
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-        // ----------------------------------------------------
-        // FETCH MEMBER
-        // ----------------------------------------------------
-
-        let applicant;
-
-        try {
-          applicant =
-            await interaction.guild.members.fetch(
-              applicantId
-            );
-        } catch {
-          await interaction.reply({
-            content:
-              "❌ This member is no longer in the server.",
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-        // ----------------------------------------------------
-        // READ EMBED
-        // ----------------------------------------------------
-
-        const oldEmbed =
-          interaction.message.embeds[0];
-
-        if (!oldEmbed) {
-          await interaction.reply({
-            content:
-              "❌ Registration information could not be found.",
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-        // ====================================================
-        // ACCEPT
-        // ====================================================
-
-        if (
-          interaction.customId.startsWith(
-            `${APPROVE_PREFIX}:`
-          )
-        ) {
-
-          const role =
-            getGenderRole(
-              interaction.guild,
-              gender
-            );
-
-          if (!role) {
-            await interaction.reply({
-              content:
-                `❌ The role for ${genderLabels[gender] || gender} is not configured. Add the correct role ID in Render.`,
-              ephemeral: true,
-            });
-
-            return;
-          }
-
-          // --------------------------------------------------
-          // BOT ROLE HIERARCHY
-          // --------------------------------------------------
-
-          const botMember =
-            interaction.guild.members.me ||
-            await interaction.guild.members.fetchMe();
-
-          if (
-            role.position >=
-            botMember.roles.highest.position
-          ) {
-            await interaction.reply({
-              content:
-                `❌ I cannot give ${role}. Move the role below the bot's highest role.`,
-              ephemeral: true,
-            });
-
-            return;
-          }
-
-          // --------------------------------------------------
-          // ADD ROLE
-          // --------------------------------------------------
-
-          try {
-            await applicant.roles.add(
-              role,
-              `Gender registration accepted by ${interaction.user.tag}`
-            );
-          } catch (error) {
-            console.error(
-              "❌ Failed to give role:",
-              error
-            );
-
-            await interaction.reply({
-              content:
-                "❌ I could not give the role. Check Manage Roles and role hierarchy.",
-              ephemeral: true,
-            });
-
-            return;
-          }
-
-          // --------------------------------------------------
-          // UPDATE LOG
-          // --------------------------------------------------
-
-          const approvedEmbed =
-            EmbedBuilder.from(
-              oldEmbed
-            )
-              .setColor("#57F287")
-              .setTitle(
-                "📋 Gender Registration — ACCEPTED"
-              );
-
-          const statusIndex =
-            approvedEmbed.data.fields.findIndex(
-              (field) =>
-                field.name ===
-                "📝 Status"
-            );
-
-          if (
-            statusIndex !== -1
-          ) {
-            approvedEmbed.spliceFields(
-              statusIndex,
-              1,
-              {
-                name:
-                  "📝 Status",
-                value:
-                  "✅ **ACCEPTED**",
-                inline: true,
-              }
-            );
-          }
-
-          approvedEmbed
-            .addFields(
-              {
-                name:
-                  "👮 Reviewed By",
-                value:
-                  `${interaction.user}\n\`${interaction.user.id}\``,
-                inline: true,
-              },
-              {
-                name:
-                  "🎭 Role Granted",
-                value:
-                  `${role}`,
-                inline: true,
-              }
-            )
-            .setTimestamp();
-
-          await interaction.update({
-            content:
-              `<@&${STAFF_ROLE_ID}>`,
-            embeds: [
-              approvedEmbed,
-            ],
-            components: [
-              createDecisionButtons(
-                "APPROVED"
-              ),
-            ],
-          });
-
-          console.log(
-            `✅ ACCEPTED: ${applicant.user.tag} → ${role.name}`
-          );
-
-          return;
-        }
-
-        // ====================================================
-        // REJECT
-        // ====================================================
-
-        if (
-          interaction.customId.startsWith(
-            `${REJECT_PREFIX}:`
-          )
-        ) {
-
-          const rejectedEmbed =
-            EmbedBuilder.from(
-              oldEmbed
-            )
-              .setColor("#ED4245")
-              .setTitle(
-                "📋 Gender Registration — REJECTED"
-              );
-
-          const statusIndex =
-            rejectedEmbed.data.fields.findIndex(
-              (field) =>
-                field.name ===
-                "📝 Status"
-            );
-
-          if (
-            statusIndex !== -1
-          ) {
-            rejectedEmbed.spliceFields(
-              statusIndex,
-              1,
-              {
-                name:
-                  "📝 Status",
-                value:
-                  "❌ **REJECTED**",
-                inline: true,
-              }
-            );
-          }
-
-          rejectedEmbed
-            .addFields(
-              {
-                name:
-                  "👮 Reviewed By",
-                value:
-                  `${interaction.user}\n\`${interaction.user.id}\``,
-                inline: true,
-              },
-              {
-                name:
-                  "🎭 Role Granted",
-                value:
-                  "None",
-                inline: true,
-              }
-            )
-            .setTimestamp();
-
-          await interaction.update({
-            content:
-              `<@&${STAFF_ROLE_ID}>`,
-            embeds: [
-              rejectedEmbed,
-            ],
-            components: [
-              createDecisionButtons(
-                "REJECTED"
-              ),
-            ],
-          });
-
-          console.log(
-            `❌ REJECTED: ${applicant.user.tag}`
-          );
-
-          return;
-        }
-
-      } catch (error) {
-
-        console.error(
-          "❌ Staff action failed:"
-        );
-
-        console.error(error);
-
-        if (
-          !interaction.replied &&
-          !interaction.deferred
-        ) {
-          await interaction.reply({
-            content:
-              "❌ An error occurred while processing this registration.",
-            ephemeral: true,
-          }).catch(() => {});
-        }
-      }
-
-      return;
-    }
-  }
-);
-
-// ============================================================
-// LOGIN
-// ============================================================
-
-client
-  .login(TOKEN)
-  .catch((error) => {
-    console.error(
-      "❌ Discord login failed:"
-    );
-
-    console.error(error);
-  });
+});
 
 // ======================================================
 // SLASH COMMAND HANDLER
@@ -1948,6 +1098,16 @@ client
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) {
+    return;
+  }
+
+  if (!interaction.guild) {
+    await interaction.reply({
+      content:
+        "❌ This command can only be used inside the server.",
+      ephemeral: true,
+    });
+
     return;
   }
 
@@ -1976,12 +1136,10 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     // ==================================================
-    // /nickname
+    // NICKNAME COMMAND
     // ==================================================
 
-    if (
-      interaction.commandName === "nickname"
-    ) {
+    if (interaction.commandName === "nickname") {
       const subcommand =
         interaction.options.getSubcommand();
 
@@ -1990,8 +1148,12 @@ client.on("interactionCreate", async (interaction) => {
       // ------------------------------------------------
 
       if (subcommand === "setup") {
+        await interaction.deferReply({
+          ephemeral: true,
+        });
+
         const channel =
-          await client.channels.fetch(
+          await interaction.guild.channels.fetch(
             CHANNEL_ID
           );
 
@@ -1999,11 +1161,9 @@ client.on("interactionCreate", async (interaction) => {
           !channel ||
           !channel.isTextBased()
         ) {
-          await interaction.reply({
-            content:
-              "❌ CHANNEL_ID is not a valid text channel.",
-            ephemeral: true,
-          });
+          await interaction.editReply(
+            "❌ CHANNEL_ID is not a valid text channel."
+          );
 
           return;
         }
@@ -2013,20 +1173,18 @@ client.on("interactionCreate", async (interaction) => {
             limit: 100,
           });
 
-        // ----------------------------------------------
-        // Nickname panel
-        // ----------------------------------------------
+        // ==============================================
+        // NICKNAME PANEL
+        // ==============================================
 
         let nicknameMessage =
-          messages.find(
-            (message) =>
-              message.author.id ===
-                client.user.id &&
-              message.embeds.some(
-                (embed) =>
-                  embed.title ===
-                  "🏷️ REQUEST NICKNAME"
-              )
+          messages.find((message) =>
+            message.author.id === client.user.id &&
+            message.embeds.some(
+              (embed) =>
+                embed.title ===
+                "🏷️ REQUEST NICKNAME"
+            )
           );
 
         if (nicknameMessage) {
@@ -2039,30 +1197,29 @@ client.on("interactionCreate", async (interaction) => {
             ],
           });
         } else {
-          await channel.send({
-            embeds: [
-              createNicknameEmbed(),
-            ],
-            components: [
-              createNicknameButtonRow(),
-            ],
-          });
+          nicknameMessage =
+            await channel.send({
+              embeds: [
+                createNicknameEmbed(),
+              ],
+              components: [
+                createNicknameButtonRow(),
+              ],
+            });
         }
 
-        // ----------------------------------------------
-        // House Guard panel
-        // ----------------------------------------------
+        // ==============================================
+        // HOUSE GUARD PANEL
+        // ==============================================
 
         let guardMessage =
-          messages.find(
-            (message) =>
-              message.author.id ===
-                client.user.id &&
-              message.embeds.some(
-                (embed) =>
-                  embed.title ===
-                  "🐕 BIG SISTER HOUSE • HOUSE GUARD"
-              )
+          messages.find((message) =>
+            message.author.id === client.user.id &&
+            message.embeds.some(
+              (embed) =>
+                embed.title ===
+                "🐕 BIG SISTER HOUSE • HOUSE GUARD"
+            )
           );
 
         if (guardMessage) {
@@ -2073,27 +1230,26 @@ client.on("interactionCreate", async (interaction) => {
             components: [],
           });
         } else {
-          await channel.send({
-            embeds: [
-              createHouseGuardEmbed(),
-            ],
-          });
+          guardMessage =
+            await channel.send({
+              embeds: [
+                createHouseGuardEmbed(),
+              ],
+            });
         }
 
-        // ----------------------------------------------
-        // Gender Access panel
-        // ----------------------------------------------
+        // ==============================================
+        // GENDER ACCESS PANEL
+        // ==============================================
 
         let genderMessage =
-          messages.find(
-            (message) =>
-              message.author.id ===
-                client.user.id &&
-              message.embeds.some(
-                (embed) =>
-                  embed.title ===
-                  "🏠 BIG SISTER HOUSE • GENDER ACCESS"
-              )
+          messages.find((message) =>
+            message.author.id === client.user.id &&
+            message.embeds.some(
+              (embed) =>
+                embed.title ===
+                "🏠 BIG SISTER HOUSE • GENDER ACCESS"
+            )
           );
 
         if (genderMessage) {
@@ -2106,34 +1262,48 @@ client.on("interactionCreate", async (interaction) => {
             ],
           });
         } else {
-          await channel.send({
-            embeds: [
-              createGenderAccessEmbed(),
-            ],
-            components: [
-              createGenderButtonRow(),
-            ],
-          });
+          genderMessage =
+            await channel.send({
+              embeds: [
+                createGenderAccessEmbed(),
+              ],
+              components: [
+                createGenderButtonRow(),
+              ],
+            });
         }
 
-        await interaction.reply({
-          content:
-            "✅ Big Sister House panels have been created/updated.",
-          ephemeral: true,
-        });
+        await interaction.editReply(
+          [
+            "✅ **Big Sister House panels are ready.**",
+            "",
+            "🏷️ Request Nickname",
+            "🐕 House Guard",
+            "🏠 Gender Access",
+          ].join("\n")
+        );
 
         return;
       }
 
       // ------------------------------------------------
-      // Get target member
+      // GET TARGET MEMBER
       // ------------------------------------------------
 
       const targetUser =
         interaction.options.getUser(
-          "member",
-          true
+          "member"
         );
+
+      if (!targetUser) {
+        await interaction.reply({
+          content:
+            "❌ Please select a member.",
+          ephemeral: true,
+        });
+
+        return;
+      }
 
       const targetMember =
         await interaction.guild.members.fetch(
@@ -2145,13 +1315,33 @@ client.on("interactionCreate", async (interaction) => {
       // ------------------------------------------------
 
       if (subcommand === "sync") {
+        if (!targetMember.manageable) {
+          await interaction.reply({
+            content:
+              "❌ I cannot manage this member's nickname. Check the bot role hierarchy.",
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        const baseNickname =
+          getBaseNickname(targetMember);
+
         await syncMemberNickname(
-          targetMember
+          targetMember,
+          baseNickname
         );
+
+        const updated =
+          await interaction.guild.members.fetch(
+            targetMember.id
+          );
 
         await interaction.reply({
           content:
-            `✅ Nickname synchronized for ${targetMember}.`,
+            `✅ Nickname synchronized for ${updated}.\n` +
+            `🏷️ Current nickname: \`${updated.nickname || updated.user.username}\``,
           ephemeral: true,
         });
 
@@ -2162,17 +1352,8 @@ client.on("interactionCreate", async (interaction) => {
       // /nickname cleanup
       // ------------------------------------------------
 
-      if (
-        subcommand === "cleanup"
-      ) {
-        const baseNickname =
-          getBaseNickname(
-            targetMember
-          );
-
-        if (
-          !targetMember.manageable
-        ) {
+      if (subcommand === "cleanup") {
+        if (!targetMember.manageable) {
           await interaction.reply({
             content:
               "❌ I cannot manage this member's nickname. Check the bot role hierarchy.",
@@ -2182,19 +1363,26 @@ client.on("interactionCreate", async (interaction) => {
           return;
         }
 
+        const me =
+          interaction.guild.members.me;
+
         if (
-          !targetMember.guild.members.me.permissions.has(
+          !me ||
+          !me.permissions.has(
             PermissionsBitField.Flags.ManageNicknames
           )
         ) {
           await interaction.reply({
             content:
-              "❌ I need **Manage Nicknames** permission.",
+              "❌ I need Manage Nicknames permission.",
             ephemeral: true,
           });
 
           return;
         }
+
+        const baseNickname =
+          getBaseNickname(targetMember);
 
         botNicknameChanges.set(
           targetMember.id,
@@ -2202,8 +1390,8 @@ client.on("interactionCreate", async (interaction) => {
         );
 
         await targetMember.setNickname(
-          baseNickname,
-          "Nickname cleanup command"
+          truncateNickname(baseNickname),
+          "Staff nickname cleanup"
         );
 
         setTimeout(() => {
@@ -2214,7 +1402,8 @@ client.on("interactionCreate", async (interaction) => {
 
         await interaction.reply({
           content:
-            `✅ Managed nickname tags removed from ${targetMember}.\n🏷️ Base nickname: \`${baseNickname}\``,
+            `✅ Managed nickname tags removed from ${targetMember}.\n` +
+            `🏷️ Nickname: \`${truncateNickname(baseNickname)}\``,
           ephemeral: true,
         });
 
@@ -2225,25 +1414,52 @@ client.on("interactionCreate", async (interaction) => {
       // /nickname reset
       // ------------------------------------------------
 
-      if (
-        subcommand === "reset"
-      ) {
-        const originalUsername =
-          targetMember.user.username;
+      if (subcommand === "reset") {
+        if (!targetMember.manageable) {
+          await interaction.reply({
+            content:
+              "❌ I cannot manage this member's nickname. Check the bot role hierarchy.",
+            ephemeral: true,
+          });
 
-        await syncMemberNickname(
-          targetMember,
-          originalUsername
+          return;
+        }
+
+        const me =
+          interaction.guild.members.me;
+
+        if (
+          !me ||
+          !me.permissions.has(
+            PermissionsBitField.Flags.ManageNicknames
+          )
+        ) {
+          await interaction.reply({
+            content:
+              "❌ I need Manage Nicknames permission.",
+            ephemeral: true,
+          });
+
+          return;
+        }
+
+        botNicknameChanges.set(
+          targetMember.id,
+          targetMember.user.username
         );
 
-        const updated =
-          await interaction.guild.members.fetch(
+        await targetMember.setNickname(null, "Staff nickname reset");
+        
+        setTimeout(() => {
+          botNicknameChanges.delete(
             targetMember.id
           );
+        }, 5000);
 
         await interaction.reply({
           content:
-            `✅ Nickname reset using the original Discord username base.\n🏷️ Current nickname: \`${updated.nickname || originalUsername}\``,
+            `✅ Nickname reset for ${targetMember}.\n` +
+            `🏷️ Discord username: \`${targetMember.user.username}\``,
           ephemeral: true,
         });
 
@@ -2252,107 +1468,94 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     // ==================================================
-    // /role
+    // ROLE COMMAND
     // ==================================================
 
-    if (
-      interaction.commandName === "role"
-    ) {
+    if (interaction.commandName === "role") {
       const subcommand =
         interaction.options.getSubcommand();
 
       const targetUser =
         interaction.options.getUser(
-          "member",
-          true
+          "member"
         );
 
-      const targetMember =
-        await interaction.guild.members.fetch(
-          targetUser.id
+      const role =
+        interaction.options.getRole(
+          "role"
         );
 
       // ------------------------------------------------
       // /role info
       // ------------------------------------------------
 
-      if (
-        subcommand === "info"
-      ) {
-        const configuredRoles = [
-          [
-            LAMPOON_ROLE_ID,
-            "🎭 Lampoon",
-          ],
-          [
-            CONTENT_CREATOR_ROLE_ID,
-            "🎮 Content Creator",
-          ],
-          [
-            LMP_SUPPORTER_ROLE_ID,
-            "🏷️ LMP Supporter",
-          ],
-          [
-            PARTNERSHIP_ROLE_ID,
-            "🤝 Partnership",
-          ],
-          [
-            COLLABORATOR_ROLE_ID,
-            "🤝 Collaborator",
-          ],
-          [
-            SPONSOR_ROLE_ID,
-            "💰 Sponsor",
-          ],
-          [
-            SATIRICAL_CC_ROLE_ID,
-            "🎭 Satirical CC",
-          ],
-          [
-            MALE_ROLE_ID,
-            "♂️ Male",
-          ],
-          [
-            FEMALE_ROLE_ID,
-            "♀️ Female",
-          ],
-          [
-            LGBT_ROLE_ID,
-            "🏳️‍🌈 LGBT+",
-          ],
-          [
-            PREFER_NOT_TO_SAY_ROLE_ID,
-            "🔒 Prefer not to say",
-          ],
-        ];
+      if (subcommand === "info") {
+        const targetMember =
+          await interaction.guild.members.fetch(
+            targetUser.id
+          );
 
-        const memberRoles =
-          configuredRoles
-            .filter(
-              ([roleId]) =>
-                roleId &&
-                targetMember.roles.cache.has(
-                  roleId
-                )
-            )
-            .map(
-              ([, roleName]) =>
-                roleName
-            );
+        const managedRoles = [
+          {
+            name: "🎭 Lampoon",
+            id: LAMPOON_ROLE_ID,
+          },
+          {
+            name: "🎮 Content Creator",
+            id: CONTENT_CREATOR_ROLE_ID,
+          },
+          {
+            name: "🏷️ LMP Supporter",
+            id: LMP_SUPPORTER_ROLE_ID,
+          },
+          {
+            name: "🤝 Partnership",
+            id: PARTNERSHIP_ROLE_ID,
+          },
+          {
+            name: "🤝 Collaborator",
+            id: COLLABORATOR_ROLE_ID,
+          },
+          {
+            name: "💰 Sponsor",
+            id: SPONSOR_ROLE_ID,
+          },
+          {
+            name: "🎭 Satirical CC",
+            id: SATIRICAL_CC_ROLE_ID,
+          },
+          {
+            name: "♂️ Male",
+            id: MALE_ROLE_ID,
+          },
+          {
+            name: "♀️ Female",
+            id: FEMALE_ROLE_ID,
+          },
+          {
+            name: "🏳️‍🌈 LGBT+",
+            id: LGBT_ROLE_ID,
+          },
+          {
+            name: "🔒 Prefer not to say",
+            id: PREFER_NOT_TO_SAY_ROLE_ID,
+          },
+        ].filter((item) => item.id);
+
+        const lines =
+          managedRoles.map((item) => {
+            const has =
+              targetMember.roles.cache.has(
+                item.id
+              );
+
+            return `${has ? "✅" : "❌"} ${item.name}`;
+          });
 
         await interaction.reply({
           content:
-            `👤 **${targetMember.user.tag}**\n\n` +
-            (
-              memberRoles.length
-                ? memberRoles
-                    .map(
-                      (role) =>
-                        `• ${role}`
-                    )
-                    .join("\n")
-                : "No configured roles found."
-            ),
+            `### 🎭 Roles for ${targetMember}\n\n` +
+            lines.join("\n"),
           ephemeral: true,
         });
 
@@ -2360,13 +1563,22 @@ client.on("interactionCreate", async (interaction) => {
       }
 
       // ------------------------------------------------
-      // Get requested role
+      // Validate role
       // ------------------------------------------------
 
-      const role =
-        interaction.options.getRole(
-          "role",
-          true
+      if (!role) {
+        await interaction.reply({
+          content:
+            "❌ Please select a role.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      const targetMember =
+        await interaction.guild.members.fetch(
+          targetUser.id
         );
 
       const botMember =
@@ -2382,10 +1594,6 @@ client.on("interactionCreate", async (interaction) => {
         return;
       }
 
-      // ------------------------------------------------
-      // Bot Manage Roles permission
-      // ------------------------------------------------
-
       if (
         !botMember.permissions.has(
           PermissionsBitField.Flags.ManageRoles
@@ -2393,39 +1601,32 @@ client.on("interactionCreate", async (interaction) => {
       ) {
         await interaction.reply({
           content:
-            "❌ I need **Manage Roles** permission.",
+            "❌ I need Manage Roles permission.",
           ephemeral: true,
         });
 
         return;
       }
-
-      // ------------------------------------------------
-      // Managed role check
-      // ------------------------------------------------
-
-      if (role.managed) {
-        await interaction.reply({
-          content:
-            "❌ I cannot manually manage a Discord-managed role.",
-          ephemeral: true,
-        });
-
-        return;
-      }
-
-      // ------------------------------------------------
-      // Role hierarchy check
-      // ------------------------------------------------
 
       if (
-        botMember.roles.highest.comparePositionTo(
-          role
-        ) <= 0
+        role.managed
       ) {
         await interaction.reply({
           content:
-            "❌ That role is equal to or higher than my highest role. Move my bot role above it.",
+            "❌ Discord-managed roles cannot be manually managed by the bot.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      if (
+        role.position >=
+        botMember.roles.highest.position
+      ) {
+        await interaction.reply({
+          content:
+            "❌ My highest role must be above the role I am trying to manage.",
           ephemeral: true,
         });
 
@@ -2436,9 +1637,7 @@ client.on("interactionCreate", async (interaction) => {
       // /role add
       // ------------------------------------------------
 
-      if (
-        subcommand === "add"
-      ) {
+      if (subcommand === "add") {
         if (
           targetMember.roles.cache.has(
             role.id
@@ -2458,27 +1657,14 @@ client.on("interactionCreate", async (interaction) => {
           `Staff /role add by ${interaction.user.tag}`
         );
 
-        // ========================================================
-        // LOG ROLE ADDITION
-        // ========================================================
-
-        await sendNicknameLog({
-          action: "role_add",
-          member: targetMember,
-          actor: interaction.member,
-          role: role,
-          reason:
-            `/role add used by ${interaction.user.tag}`,
-        });
-
-        // Sync nickname after role addition.
         await syncMemberNickname(
           targetMember
         );
 
         await interaction.reply({
           content:
-            `✅ Added ${role} to ${targetMember}.\n🏷️ Nickname synchronized.`,
+            `✅ Added ${role} to ${targetMember}.\n` +
+            "🏷️ Nickname synchronized.",
           ephemeral: true,
         });
 
@@ -2489,9 +1675,7 @@ client.on("interactionCreate", async (interaction) => {
       // /role remove
       // ------------------------------------------------
 
-      if (
-        subcommand === "remove"
-      ) {
+      if (subcommand === "remove") {
         if (
           !targetMember.roles.cache.has(
             role.id
@@ -2511,21 +1695,6 @@ client.on("interactionCreate", async (interaction) => {
           `Staff /role remove by ${interaction.user.tag}`
         );
 
-        // ========================================================
-        // LOG ROLE REMOVAL
-        // ========================================================
-
-        await sendNicknameLog({
-          action: "role_remove",
-          member: targetMember,
-          actor: interaction.member,
-          role: role,
-          reason:
-            `/role remove used by ${interaction.user.tag}`,
-        });
-
-        // Fetch fresh member data so the nickname
-        // reflects the newly removed role.
         const refreshedMember =
           await interaction.guild.members.fetch(
             targetMember.id
@@ -2537,7 +1706,8 @@ client.on("interactionCreate", async (interaction) => {
 
         await interaction.reply({
           content:
-            `✅ Removed ${role} from ${refreshedMember}.\n🏷️ Nickname synchronized.`,
+            `✅ Removed ${role} from ${refreshedMember}.\n` +
+            "🏷️ Nickname synchronized.",
           ephemeral: true,
         });
 
@@ -2556,9 +1726,881 @@ client.on("interactionCreate", async (interaction) => {
     ) {
       await interaction.reply({
         content:
-          "❌ An error occurred while processing the command.",
+          "❌ Something went wrong while executing the command.",
+        ephemeral: true,
+      }).catch(() => {});
+    }
+  }
+});
+
+// ======================================================
+// BUTTON INTERACTIONS
+// ======================================================
+
+client.on("interactionCreate", async (interaction) => {
+  try {
+    
+    // ==================================================
+    // REQUEST NICKNAME BUTTON
+    // ==================================================
+
+    if (
+      interaction.isButton() &&
+      interaction.customId === NICKNAME_BUTTON_ID
+    ) {
+      const modal = new ModalBuilder()
+        .setCustomId(NICKNAME_MODAL_ID)
+        .setTitle("🏷️ Request Nickname");
+
+      const nicknameInput =
+        new TextInputBuilder()
+          .setCustomId(NICKNAME_INPUT_ID)
+          .setLabel("Server Nickname")
+          .setPlaceholder("Example: Mikasa")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(32);
+
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(
+          nicknameInput
+        )
+      );
+
+      await interaction.showModal(modal);
+
+      return;
+    }
+
+    // ==================================================
+    // REQUEST GENDER BUTTON
+    // ==================================================
+
+    if (
+      interaction.isButton() &&
+      interaction.customId === GENDER_BUTTON_ID
+    ) {
+      await interaction.reply({
+        content:
+          "🔐 **Big Sister House — Gender Access**\n\n" +
+          "Please choose the gender category that applies to you.\n" +
+          "Your request will be reviewed by Registration Staff.",
+        components: [createGenderSelectRow()],
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    // ==================================================
+    // STAFF ACCEPT
+    // ==================================================
+
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith(
+        `${APPROVE_PREFIX}:`
+      )
+    ) {
+      await handleStaffDecision(
+        interaction,
+        true
+      );
+
+      return;
+    }
+
+    // ==================================================
+    // STAFF REJECT
+    // ==================================================
+
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith(
+        `${REJECT_PREFIX}:`
+      )
+    ) {
+      await handleStaffDecision(
+        interaction,
+        false
+      );
+
+      return;
+    }
+  } catch (error) {
+    console.error(
+      "❌ Button interaction error:",
+      error
+    );
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content:
+          "❌ Something went wrong while processing this request.",
         ephemeral: true,
       });
     }
   }
 });
+
+// ======================================================
+// NICKNAME MODAL SUBMISSION
+// ======================================================
+
+client.on("interactionCreate", async (interaction) => {
+  if (
+    !interaction.isModalSubmit() ||
+    interaction.customId !== NICKNAME_MODAL_ID
+  ) {
+    return;
+  }
+
+  try {
+    const requestedNickname =
+      cleanText(
+        interaction.fields.getTextInputValue(
+          NICKNAME_INPUT_ID
+        )
+      );
+
+    if (!requestedNickname) {
+      await interaction.reply({
+        content:
+          "❌ Please enter a nickname.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    const member =
+      await interaction.guild.members.fetch(
+        interaction.user.id
+      );
+
+    originalNames.set(
+      member.id,
+      member.user.username
+    );
+
+    await updateRegistration(
+      member,
+      {
+        requestedNickname:
+          requestedNickname,
+      }
+    );
+
+    const registration =
+      pendingRegistrations.get(member.id);
+
+    if (
+      registration &&
+      registration.genderKey
+    ) {
+      await interaction.reply({
+        content:
+          "✅ **Nickname request submitted.**\n\n" +
+          `🏷️ Requested nickname: \`${requestedNickname}\`\n\n` +
+          "Your nickname and gender request have been combined into one staff registration log.",
+        ephemeral: true,
+      });
+    } else {
+      await interaction.reply({
+        content:
+          "✅ **Nickname request saved.**\n\n" +
+          `🏷️ Requested nickname: \`${requestedNickname}\`\n\n` +
+          "Please also submit your **Gender Access** request so Registration Staff can review the complete registration.",
+        ephemeral: true,
+      });
+    }
+  } catch (error) {
+    console.error(
+      "❌ Nickname modal error:",
+      error
+    );
+
+    if (!interaction.replied) {
+      await interaction.reply({
+        content:
+          "❌ Unable to submit your nickname request.",
+        ephemeral: true,
+      });
+    }
+  }
+});
+
+// ======================================================
+// GENDER SELECT SUBMISSION
+// ======================================================
+
+client.on("interactionCreate", async (interaction) => {
+  if (
+    !interaction.isStringSelectMenu() ||
+    interaction.customId !== GENDER_MENU_ID
+  ) {
+    return;
+  }
+
+  try {
+    const genderKey =
+      interaction.values[0];
+
+    const genderData =
+      GENDER_DATA[genderKey];
+
+    if (!genderData) {
+      await interaction.update({
+        content:
+          "❌ Invalid gender selection.",
+        components: [],
+      });
+
+      return;
+    }
+
+    const member =
+      await interaction.guild.members.fetch(
+        interaction.user.id
+      );
+
+    originalNames.set(
+      member.id,
+      member.user.username
+    );
+
+    await updateRegistration(
+      member,
+      {
+        genderKey: genderKey,
+      }
+    );
+
+    const registration =
+      pendingRegistrations.get(member.id);
+
+    if (
+      registration &&
+      registration.requestedNickname
+    ) {
+      await interaction.update({
+        content:
+          "✅ **Gender Access request submitted.**\n\n" +
+          `🎭 Selected: **${genderData.emoji} ${genderData.label}**\n\n` +
+          "Your nickname and gender request have been combined into one staff registration log for review.",
+        components: [],
+      });
+    } else {
+      await interaction.update({
+        content:
+          "✅ **Gender Access request saved.**\n\n" +
+          `🎭 Selected: **${genderData.emoji} ${genderData.label}**\n\n` +
+          "Please also submit your **Nickname** request so Registration Staff can review the complete registration.",
+        components: [],
+      });
+    }
+  } catch (error) {
+    console.error(
+      "❌ Gender selection error:",
+      error
+    );
+
+    if (!interaction.replied) {
+      await interaction.update({
+        content:
+          "❌ Unable to submit your gender access request.",
+        components: [],
+      });
+    }
+  }
+});
+
+// ======================================================
+// STAFF DECISION HANDLER
+// ======================================================
+
+async function handleStaffDecision(
+  interaction,
+  approved
+) {
+  const parts =
+    interaction.customId.split(":");
+
+  const userId = parts[1];
+
+  if (!userId) {
+    await interaction.reply({
+      content:
+        "❌ Invalid registration request.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // Check staff role
+  // ----------------------------------------------------
+
+  const staffMember =
+    await interaction.guild.members.fetch(
+      interaction.user.id
+    );
+
+  if (
+    !staffMember.roles.cache.has(
+      STAFF_ROLE_ID
+    )
+  ) {
+    await interaction.reply({
+      content:
+        "❌ You do not have permission to review Big Sister House registrations.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // Retrieve applicant
+  // ----------------------------------------------------
+
+  let applicant;
+
+  try {
+    applicant =
+      await interaction.guild.members.fetch(
+        userId
+      );
+  } catch (error) {
+    await interaction.reply({
+      content:
+        "❌ The applicant could not be found in this server.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  const registration =
+    pendingRegistrations.get(userId);
+
+  if (!registration) {
+    await interaction.reply({
+      content:
+        "❌ This registration is no longer available in the bot's active registration storage.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  if (
+    !registration.requestedNickname ||
+    !registration.genderKey
+  ) {
+    await interaction.reply({
+      content:
+        "❌ This registration is incomplete. Both nickname and gender access must be submitted before approval.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // REJECT
+  // ----------------------------------------------------
+
+  if (!approved) {
+    const rejectedEmbed =
+      new EmbedBuilder()
+        .setColor("#ED4245")
+        .setTitle(
+          "📋 BIG SISTER HOUSE • REGISTRATION"
+        )
+        .addFields(
+          {
+            name: "👤 Applicant",
+            value: `<@${applicant.id}>`,
+            inline: false,
+          },
+          {
+            name: "🏷️ Requested Nickname",
+            value: `\`${registration.requestedNickname}\``,
+            inline: true,
+          },
+          {
+            name: "🎭 Gender",
+            value: getGenderLabel(
+              registration.genderKey
+            ),
+            inline: true,
+          },
+          {
+            name: "📌 Status",
+            value: "❌ **REJECTED**",
+            inline: false,
+          },
+          {
+            name: "👮 Reviewed By",
+            value: `<@${interaction.user.id}>`,
+            inline: true,
+          },
+          {
+            name: "🎁 Role Granted",
+            value: "None",
+            inline: true,
+          }
+        )
+        .setTimestamp();
+
+    await interaction.update({
+      content: `<@&${STAFF_ROLE_ID}>`,
+      embeds: [rejectedEmbed],
+      components: [
+        createStaffDecisionRow(
+          applicant.id,
+          false
+        ),
+      ],
+    });
+
+    pendingRegistrations.delete(userId);
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // APPROVE
+  // ----------------------------------------------------
+
+  const genderRoleId =
+    getGenderRoleId(
+      registration.genderKey
+    );
+
+  if (!genderRoleId) {
+    await interaction.reply({
+      content:
+        "❌ The selected gender role is not configured in Render environment variables.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  const botMember =
+    interaction.guild.members.me;
+
+  if (!botMember) {
+    await interaction.reply({
+      content:
+        "❌ I could not find my own bot member in the server.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // Permission check
+  // ----------------------------------------------------
+
+  if (
+    !botMember.permissions.has(
+      PermissionsBitField.Flags.ManageRoles
+    )
+  ) {
+    await interaction.reply({
+      content:
+        "❌ I need **Manage Roles** permission to approve this registration.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  if (
+    !botMember.permissions.has(
+      PermissionsBitField.Flags.ManageNicknames
+    )
+  ) {
+    await interaction.reply({
+      content:
+        "❌ I need **Manage Nicknames** permission to approve this registration.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  const genderRole =
+    interaction.guild.roles.cache.get(
+      genderRoleId
+    );
+
+  if (!genderRole) {
+    await interaction.reply({
+      content:
+        "❌ The configured gender role could not be found.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  if (
+    botMember.roles.highest.comparePositionTo(
+      genderRole
+    ) <= 0
+  ) {
+    await interaction.reply({
+      content:
+        "❌ My highest role must be above the gender role I need to assign.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  if (!applicant.manageable) {
+    await interaction.reply({
+      content:
+        "❌ I cannot manage this member's nickname. Move my bot role above the member's highest role.",
+      ephemeral: true,
+    });
+
+    return;
+  }
+
+  try {
+    // --------------------------------------------------
+    // Remove old gender roles
+    // --------------------------------------------------
+
+    const genderRoleIds = [
+      MALE_ROLE_ID,
+      FEMALE_ROLE_ID,
+      LGBT_ROLE_ID,
+      PREFER_NOT_TO_SAY_ROLE_ID,
+    ].filter(Boolean);
+
+    for (const oldRoleId of genderRoleIds) {
+      if (
+        oldRoleId !== genderRoleId &&
+        applicant.roles.cache.has(oldRoleId)
+      ) {
+        try {
+          await applicant.roles.remove(
+            oldRoleId,
+            "Big Sister House registration approval"
+          );
+        } catch (error) {
+          console.error(
+            `⚠️ Could not remove old gender role ${oldRoleId}:`,
+            error
+          );
+        }
+      }
+    }
+
+    // --------------------------------------------------
+    // Add selected gender role
+    // --------------------------------------------------
+
+    await applicant.roles.add(
+      genderRoleId,
+      "Big Sister House registration approval"
+    );
+
+    // --------------------------------------------------
+    // Save original identity
+    // --------------------------------------------------
+
+    originalNames.set(
+      applicant.id,
+      applicant.user.username
+    );
+
+    // --------------------------------------------------
+    // Apply requested nickname
+    // --------------------------------------------------
+
+    await setManagedNickname(
+      applicant,
+      registration.requestedNickname
+    );
+
+    const updatedApplicant =
+      await interaction.guild.members.fetch(
+        applicant.id
+      );
+
+    const approvedNickname =
+      updatedApplicant.nickname ||
+      registration.requestedNickname;
+
+    // --------------------------------------------------
+    // Update staff log
+    // --------------------------------------------------
+
+    const approvedEmbed =
+      new EmbedBuilder()
+        .setColor("#57F287")
+        .setTitle(
+          "📋 BIG SISTER HOUSE • REGISTRATION"
+        )
+        .addFields(
+          {
+            name: "👤 Applicant",
+            value: `<@${applicant.id}>`,
+            inline: false,
+          },
+          {
+            name: "🏷️ Requested Nickname",
+            value: `\`${registration.requestedNickname}\``,
+            inline: true,
+          },
+          {
+            name: "🎭 Gender",
+            value: getGenderLabel(
+              registration.genderKey
+            ),
+            inline: true,
+          },
+          {
+            name: "📌 Status",
+            value: "✅ **APPROVED**",
+            inline: false,
+          },
+          {
+            name: "👮 Reviewed By",
+            value: `<@${interaction.user.id}>`,
+            inline: true,
+          },
+          {
+            name: "🎁 Role Granted",
+            value: `<@&${genderRoleId}>`,
+            inline: true,
+          },
+          {
+            name: "🏷️ Nickname Updated",
+            value: `\`${approvedNickname}\``,
+            inline: false,
+          }
+        )
+        .setTimestamp();
+
+    await interaction.update({
+      content: `<@&${STAFF_ROLE_ID}>`,
+      embeds: [approvedEmbed],
+      components: [
+        createStaffDecisionRow(
+          applicant.id,
+          false
+        ),
+      ],
+    });
+
+    pendingRegistrations.delete(userId);
+
+    // --------------------------------------------------
+    // DM applicant if possible
+    // --------------------------------------------------
+
+    try {
+      await applicant.send(
+        [
+          "🏠 **Big Sister House Registration**",
+          "",
+          "✅ Your registration has been **approved**.",
+          "",
+          `🎭 Gender Role: **${getGenderLabel(
+            registration.genderKey
+          )}**`,
+          `🏷️ Server Nickname: \`${approvedNickname}\``,
+          "",
+          "Welcome to the Big Sister House.",
+        ].join("\n")
+      );
+    } catch (error) {
+      console.log(
+        `ℹ️ Could not DM ${applicant.user.tag}.`
+      );
+    }
+  } catch (error) {
+    console.error(
+      "❌ Registration approval failed:",
+      error
+    );
+
+    if (!interaction.replied) {
+      await interaction.reply({
+        content:
+          "❌ Registration approval failed. Check the bot's role hierarchy and permissions.",
+        ephemeral: true,
+      });
+    }
+  }
+}
+
+// ======================================================
+// MEMBER ROLE / NICKNAME CHANGES
+// ======================================================
+
+client.on(
+  "guildMemberUpdate",
+  async (oldMember, newMember) => {
+    try {
+      if (newMember.user.bot) {
+        return;
+      }
+
+      // ------------------------------------------------
+      // Detect bot's own nickname change
+      // ------------------------------------------------
+
+      const expectedBotNickname =
+        botNicknameChanges.get(
+          newMember.id
+        );
+
+      if (
+        expectedBotNickname &&
+        newMember.nickname === expectedBotNickname
+      ) {
+        botNicknameChanges.delete(
+          newMember.id
+        );
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // Detect manual nickname change
+      // ------------------------------------------------
+
+      const nicknameChanged =
+        oldMember.nickname !==
+        newMember.nickname;
+
+      // ------------------------------------------------
+      // Detect role change
+      // ------------------------------------------------
+
+      const rolesChanged =
+        oldMember.roles.cache.size !==
+          newMember.roles.cache.size ||
+        oldMember.roles.cache.some(
+          (role) =>
+            !newMember.roles.cache.has(
+              role.id
+            )
+        ) ||
+        newMember.roles.cache.some(
+          (role) =>
+            !oldMember.roles.cache.has(
+              role.id
+            )
+        );
+
+      if (!nicknameChanged && !rolesChanged) {
+        return;
+      }
+
+      let baseNickname;
+
+      if (nicknameChanged) {
+        // If someone manually removes the guild nickname,
+        // restore the original Discord username as base.
+        if (!newMember.nickname) {
+          baseNickname =
+            newMember.user.username;
+        } else {
+          // Otherwise, preserve the manually selected
+          // nickname as the new base and only manage tags.
+          baseNickname =
+            stripManagedNicknameTags(
+              newMember.nickname
+            );
+
+          if (!baseNickname) {
+            baseNickname =
+              newMember.user.username;
+          }
+        }
+      } else {
+        // Role changed but nickname did not.
+        // Recover the existing base from the current nickname.
+        baseNickname =
+          getBaseNickname(newMember);
+      }
+
+      originalNames.set(
+        newMember.id,
+        newMember.user.username
+      );
+
+      await syncMemberNickname(
+        newMember,
+        baseNickname
+      );
+    } catch (error) {
+      console.error(
+        "❌ guildMemberUpdate error:",
+        error
+      );
+    }
+  }
+);
+
+// ======================================================
+// MEMBER JOIN
+// ======================================================
+
+client.on(
+  "guildMemberAdd",
+  async (member) => {
+    try {
+      if (member.user.bot) {
+        return;
+      }
+
+      originalNames.set(
+        member.id,
+        member.user.username
+      );
+
+      // On rejoin, original Discord username is the base.
+      // Existing roles, if present, are reflected in tags.
+      await syncMemberNickname(
+        member,
+        member.user.username
+      );
+
+      console.log(
+        `👋 Member joined: ${member.user.tag}`
+      );
+    } catch (error) {
+      console.error(
+        "❌ guildMemberAdd error:",
+        error
+      );
+    }
+  }
+);
+
+// ======================================================
+// LOGIN
+// ======================================================
+
+client
+  .login(DISCORD_TOKEN)
+  .catch((error) => {
+    console.error(
+      "❌ Discord login failed:",
+      error
+    );
+    process.exit(1);
+  });
