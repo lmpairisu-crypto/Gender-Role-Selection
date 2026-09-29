@@ -525,6 +525,171 @@ async function sendRegistrationToLog({
 }
 
 // ============================================================
+// NICKNAME / ROLE LOGGING
+// ============================================================
+
+async function sendNicknameLog({
+  action,
+  member,
+  actor,
+  role = null,
+  oldNickname = null,
+  newNickname = null,
+  reason = null,
+}) {
+  try {
+    if (!NICKNAME_LOG_CHANNEL_ID) {
+      console.log(
+        "⚠️ NICKNAME_LOG_CHANNEL_ID is not configured."
+      );
+
+      return;
+    }
+
+    const channel =
+      await client.channels.fetch(
+        NICKNAME_LOG_CHANNEL_ID
+      );
+
+    if (
+      !channel ||
+      !channel.isTextBased()
+    ) {
+      console.log(
+        "⚠️ NICKNAME_LOG_CHANNEL_ID is not a valid text channel."
+      );
+
+      return;
+    }
+
+    const embed =
+      new EmbedBuilder()
+        .setTimestamp();
+
+    // ========================================================
+    // ROLE ADDED
+    // ========================================================
+
+    if (action === "role_add") {
+      embed
+        .setColor("#57F287")
+        .setTitle("➕ ROLE ADDED")
+        .addFields(
+          {
+            name: "👤 Member",
+            value:
+              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
+            inline: false,
+          },
+          {
+            name: "🎭 Role",
+            value: `${role}`,
+            inline: true,
+          },
+          {
+            name: "👮 Added By",
+            value:
+              `${actor}\n\`${actor.user.tag}\``,
+            inline: true,
+          }
+        );
+    }
+
+    // ========================================================
+    // ROLE REMOVED
+    // ========================================================
+
+    else if (action === "role_remove") {
+      embed
+        .setColor("#ED4245")
+        .setTitle("➖ ROLE REMOVED")
+        .addFields(
+          {
+            name: "👤 Member",
+            value:
+              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
+            inline: false,
+          },
+          {
+            name: "🎭 Role",
+            value: `${role}`,
+            inline: true,
+          },
+          {
+            name: "👮 Removed By",
+            value:
+              `${actor}\n\`${actor.user.tag}\``,
+            inline: true,
+          }
+        );
+    }
+
+    // ========================================================
+    // NICKNAME CHANGED
+    // ========================================================
+
+    else if (action === "nickname") {
+      embed
+        .setColor("#5865F2")
+        .setTitle("🏷️ NICKNAME CHANGED")
+        .addFields(
+          {
+            name: "👤 Member",
+            value:
+              `${member}\n\`${member.user.tag}\`\n\`${member.id}\``,
+            inline: false,
+          },
+          {
+            name: "⬅️ Previous",
+            value:
+              oldNickname
+                ? `\`${oldNickname}\``
+                : "`None`",
+            inline: true,
+          },
+          {
+            name: "➡️ New",
+            value:
+              newNickname
+                ? `\`${newNickname}\``
+                : "`None`",
+            inline: true,
+          },
+          {
+            name: "👮 Changed By",
+            value:
+              `${actor}\n\`${actor.user.tag}\``,
+            inline: true,
+          }
+        );
+    }
+
+    if (reason) {
+      embed.addFields({
+        name: "📝 Reason",
+        value: String(reason).slice(0, 1024),
+        inline: false,
+      });
+    }
+
+    embed.setFooter({
+      text:
+        "Pinoy Big Sister • Nickname & Role Management",
+    });
+
+    await channel.send({
+      embeds: [embed],
+    });
+
+  } catch (error) {
+    console.error(
+      "❌ Nickname/role log error:",
+      error
+    );
+  }
+}
+
+// ============================================================
 // READY
 // ============================================================
 
@@ -1680,23 +1845,27 @@ client.on("interactionCreate", async (interaction) => {
         }
 
         await targetMember.roles.add(
-          role,
-          `Staff /role add by ${interaction.user.tag}`
-        );
+  role,
+  `Staff /role add by ${interaction.user.tag}`
+);
 
-        // Sync nickname after role addition.
-        await syncMemberNickname(
-          targetMember
-        );
+// ========================================================
+// LOG ROLE ADDITION
+// ========================================================
 
-        await interaction.reply({
-          content:
-            `✅ Added ${role} to ${targetMember}.\n🏷️ Nickname synchronized.`,
-          ephemeral: true,
-        });
+await sendNicknameLog({
+  action: "role_add",
+  member: targetMember,
+  actor: interaction.member,
+  role: role,
+  reason:
+    `/role add used by ${interaction.user.tag}`,
+});
 
-        return;
-      }
+// Sync nickname after role addition.
+await syncMemberNickname(
+  targetMember
+);
 
       // ------------------------------------------------
       // /role remove
@@ -1719,30 +1888,30 @@ client.on("interactionCreate", async (interaction) => {
           return;
         }
 
-        await targetMember.roles.remove(
-          role,
-          `Staff /role remove by ${interaction.user.tag}`
-        );
+    await targetMember.roles.remove(
+  role,
+  `Staff /role remove by ${interaction.user.tag}`
+);
 
-        // Fetch fresh member data so the nickname
-        // reflects the newly removed role.
-        const refreshedMember =
-          await interaction.guild.members.fetch(
-            targetMember.id
-          );
+// ========================================================
+// LOG ROLE REMOVAL
+// ========================================================
 
-        await syncMemberNickname(
-          refreshedMember
-        );
+await sendNicknameLog({
+  action: "role_remove",
+  member: targetMember,
+  actor: interaction.member,
+  role: role,
+  reason:
+    `/role remove used by ${interaction.user.tag}`,
+});
 
-        await interaction.reply({
-          content:
-            `✅ Removed ${role} from ${refreshedMember}.\n🏷️ Nickname synchronized.`,
-          ephemeral: true,
-        });
-
-        return;
-      }
+// Fetch fresh member data so the nickname
+// reflects the newly removed role.
+const refreshedMember =
+  await interaction.guild.members.fetch(
+    targetMember.id
+  );
     }
   } catch (error) {
     console.error(
