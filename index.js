@@ -310,7 +310,7 @@ function createHouseGuardEmbed() {
 function createGenderAccessEmbed() {
   const embed = new EmbedBuilder()
     .setColor("#5865F2")
-    .setTitle("🏠 GENDER-BASED ACCESS")
+    .setTitle("🏠 BIG SISTER HOUSE • GENDER ACCESS")
     .setDescription(
       [
         "Your approved gender role determines which private **Room/House** you can access.",
@@ -726,6 +726,410 @@ async function sendNicknameLog({
       error
     );
   }
+}
+
+// ============================================================
+// NICKNAME MANAGER
+// ============================================================
+
+// Tracks nickname changes made by this bot so they can
+// be distinguished from manual nickname changes.
+const botNicknameChanges = new Map();
+
+// ============================================================
+// NICKNAME TAG CLEANER
+// ============================================================
+
+function getBaseNickname(member) {
+  const currentNickname =
+    member.nickname ||
+    member.user.username;
+
+  let base = String(currentNickname)
+    .trim();
+
+  // ----------------------------------------------------------
+  // Remove Lampoon prefixes
+  // Examples:
+  // LMP.Akira
+  // lmp.Akira
+  // ʟᴍᴘ.Akira
+  // Lᴍᴘ.Akira
+  // ----------------------------------------------------------
+
+  base = base.replace(
+    /^(?:LMP\.|lmp\.|ʟᴍᴘ\.|Lᴍᴘ\.)/i,
+    ""
+  );
+
+  // ----------------------------------------------------------
+  // Remove Content Creator suffix
+  // Examples:
+  // Akira cc
+  // Akira CC
+  // Akira Cc
+  // Akira cC
+  // ----------------------------------------------------------
+
+  base = base.replace(
+    /\s+(?:cc|CC|Cc|cC)$/i,
+    ""
+  );
+
+  // ----------------------------------------------------------
+  // Remove LMP Supporter suffix
+  // Examples:
+  // Akira LMP
+  // Akira lmp
+  // Akira ʟᴍᴘ
+  // ----------------------------------------------------------
+
+  base = base.replace(
+    /\s+(?:LMP|lmp|ʟᴍᴘ)$/i,
+    ""
+  );
+
+  // ----------------------------------------------------------
+  // Clean extra spaces
+  // ----------------------------------------------------------
+
+  base = base
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // ----------------------------------------------------------
+  // Fallback to Discord username
+  // ----------------------------------------------------------
+
+  if (!base) {
+    base = member.user.username;
+  }
+
+  return base.slice(0, 32);
+}
+
+// ============================================================
+// BUILD MANAGED NICKNAME
+// ============================================================
+
+function buildManagedNickname(
+  member,
+  baseNickname = null
+) {
+  let base =
+    baseNickname ||
+    getBaseNickname(member);
+
+  base = String(base)
+    .replace(
+      /^(?:LMP\.|lmp\.|ʟᴍᴘ\.|Lᴍᴘ\.)/i,
+      ""
+    )
+    .replace(
+      /\s+(?:cc|CC|Cc|cC)$/i,
+      ""
+    )
+    .replace(
+      /\s+(?:LMP|lmp|ʟᴍᴘ)$/i,
+      ""
+    )
+    .trim();
+
+  if (!base) {
+    base = member.user.username;
+  }
+
+  base = base.slice(0, 32);
+
+  // ----------------------------------------------------------
+  // Detect roles
+  // ----------------------------------------------------------
+
+  const hasLampoon =
+    Boolean(
+      LAMPOON_ROLE_ID &&
+      member.roles.cache.has(
+        LAMPOON_ROLE_ID
+      )
+    );
+
+  const hasContentCreator =
+    Boolean(
+      CONTENT_CREATOR_ROLE_ID &&
+      member.roles.cache.has(
+        CONTENT_CREATOR_ROLE_ID
+      )
+    );
+
+  const hasLmpSupporter =
+    Boolean(
+      LMP_SUPPORTER_ROLE_ID &&
+      member.roles.cache.has(
+        LMP_SUPPORTER_ROLE_ID
+      )
+    );
+
+  // ----------------------------------------------------------
+  // Build nickname
+  // ----------------------------------------------------------
+
+  let nickname = base;
+
+  // Lampoon + CC + LMP Supporter
+  if (
+    hasLampoon &&
+    hasContentCreator &&
+    hasLmpSupporter
+  ) {
+    nickname =
+      `LMP.${base} cc LMP`;
+  }
+
+  // Lampoon + CC
+  else if (
+    hasLampoon &&
+    hasContentCreator
+  ) {
+    nickname =
+      `LMP.${base} cc`;
+  }
+
+  // Lampoon + LMP Supporter
+  else if (
+    hasLampoon &&
+    hasLmpSupporter
+  ) {
+    nickname =
+      `LMP.${base} LMP`;
+  }
+
+  // Lampoon only
+  else if (
+    hasLampoon
+  ) {
+    nickname =
+      `LMP.${base}`;
+  }
+
+  // Content Creator only
+  else if (
+    hasContentCreator
+  ) {
+    nickname =
+      `${base} cc`;
+  }
+
+  // LMP Supporter only
+  else if (
+    hasLmpSupporter
+  ) {
+    nickname =
+      `${base} LMP`;
+  }
+
+  // ----------------------------------------------------------
+  // Discord nickname limit
+  // ----------------------------------------------------------
+
+  return nickname.slice(0, 32);
+}
+
+// ============================================================
+// SET MANAGED NICKNAME
+// ============================================================
+
+async function setManagedNickname(
+  member,
+  nickname,
+  reason = "Big Sister House nickname synchronization"
+) {
+  if (!member) {
+    return false;
+  }
+
+  if (!member.manageable) {
+    console.log(
+      `⚠️ Cannot manage nickname for ${member.user.tag}`
+    );
+
+    return false;
+  }
+
+  const botMember =
+    member.guild.members.me ||
+    await member.guild.members.fetchMe();
+
+  if (
+    !botMember.permissions.has(
+      PermissionsBitField.Flags.ManageNicknames
+    )
+  ) {
+    console.log(
+      "⚠️ Bot does not have Manage Nicknames permission."
+    );
+
+    return false;
+  }
+
+  const oldNickname =
+    member.nickname || null;
+
+  if (
+    oldNickname === nickname
+  ) {
+    return false;
+  }
+
+  // Mark this nickname change as made by the bot.
+  botNicknameChanges.set(
+    member.id,
+    {
+      oldNickname,
+      newNickname: nickname,
+      createdAt: Date.now(),
+    }
+  );
+
+  try {
+    await member.setNickname(
+      nickname,
+      reason
+    );
+
+    // --------------------------------------------------------
+    // Log nickname change
+    // --------------------------------------------------------
+
+    await sendNicknameLog({
+      action: "nickname",
+      member,
+      actor: botMember,
+      oldNickname,
+      newNickname: nickname,
+      reason,
+    });
+
+    return true;
+
+  } catch (error) {
+    botNicknameChanges.delete(
+      member.id
+    );
+
+    console.error(
+      `❌ Failed to change nickname for ${member.user.tag}:`,
+      error
+    );
+
+    return false;
+  } finally {
+    setTimeout(() => {
+      botNicknameChanges.delete(
+        member.id
+      );
+    }, 5000);
+  }
+}
+
+// ============================================================
+// SYNCHRONIZE MEMBER NICKNAME
+// ============================================================
+
+async function syncMemberNickname(
+  member,
+  forcedBaseNickname = null
+) {
+  if (!member) {
+    return null;
+  }
+
+  const baseNickname =
+    forcedBaseNickname ||
+    getBaseNickname(member);
+
+  const newNickname =
+    buildManagedNickname(
+      member,
+      baseNickname
+    );
+
+  await setManagedNickname(
+    member,
+    newNickname,
+    forcedBaseNickname
+      ? "Nickname reset command"
+      : "Big Sister House nickname synchronization"
+  );
+
+  return newNickname;
+}
+
+// ============================================================
+// NICKNAME PANEL EMBED
+// ============================================================
+
+function createNicknameEmbed() {
+  return new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🏷️ REQUEST NICKNAME")
+    .setDescription(
+      [
+        "Welcome to the **Big Sister House Nickname Manager**.",
+        "",
+        "Your nickname is automatically synchronized according to your assigned House roles.",
+        "",
+        "### 🏷️ Nickname Rules",
+        "",
+        "🎭 **Lampoon**",
+        "`LMP.Username`",
+        "",
+        "🎮 **Content Creator**",
+        "`Username cc`",
+        "",
+        "🏷️ **LMP Supporter**",
+        "`Username LMP`",
+        "",
+        "🎭 **Lampoon + Content Creator**",
+        "`LMP.Username cc`",
+        "",
+        "🏷️ **Lampoon + LMP Supporter**",
+        "`LMP.Username LMP`",
+        "",
+        "🎮 **Lampoon + Content Creator + LMP Supporter**",
+        "`LMP.Username cc LMP`",
+        "",
+        "Your nickname may be synchronized whenever your managed roles change.",
+      ].join("\n")
+    )
+    .setFooter({
+      text:
+        "Pinoy Big Sister • Nickname Management",
+    })
+    .setTimestamp();
+}
+
+// ============================================================
+// NICKNAME BUTTON ROW
+// ============================================================
+
+function createNicknameButtonRow() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(
+        "nickname_sync_self"
+      )
+      .setLabel("Sync My Nickname")
+      .setEmoji("🏷️")
+      .setStyle(ButtonStyle.Primary)
+  );
+}
+
+// ============================================================
+// GENDER ACCESS BUTTON ROW
+// ============================================================
+
+function createGenderButtonRow() {
+  return createStartButton();
 }
 
 // ============================================================
