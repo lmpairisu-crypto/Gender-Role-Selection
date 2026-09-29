@@ -1368,6 +1368,53 @@ async function sendRegistrationPanel() {
 client.on(
   "interactionCreate",
   async (interaction) => {
+    
+// ========================================================
+// NICKNAME SELF SYNC BUTTON
+// ========================================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId ===
+    "nickname_sync_self"
+) {
+  try {
+    const member =
+      await interaction.guild.members.fetch(
+        interaction.user.id
+      );
+
+    const nickname =
+      await syncMemberNickname(
+        member
+      );
+
+    await interaction.reply({
+      content:
+        `✅ Your nickname has been synchronized.\n🏷️ Current nickname: \`${nickname}\``,
+      ephemeral: true,
+    });
+
+  } catch (error) {
+    console.error(
+      "❌ Nickname self-sync failed:",
+      error
+    );
+
+    if (
+      !interaction.replied &&
+      !interaction.deferred
+    ) {
+      await interaction.reply({
+        content:
+          "❌ I could not synchronize your nickname.",
+        ephemeral: true,
+      }).catch(() => {});
+    }
+  }
+
+  return;
+}
 
     // ========================================================
     // START REGISTRATION
