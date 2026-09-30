@@ -25,7 +25,8 @@ const PORT = Number(process.env.PORT) || 10000;
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const ROLE_LOG_CHANNEL_ID = process.env.ROLE_LOG_CHANNEL_ID;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 
 const NICKNAME_LOG_CHANNEL_ID =
@@ -466,42 +467,16 @@ async function syncMemberNickname(member, baseNickname = null) {
   );
 }
 
-// ------------------------------------------------
-// ROLE LOGGING
-// ------------------------------------------------
-
-for (const role of addedRoles.values()) {
-  await sendRoleLog(
-    newMember,
-    role,
-    "added",
-    "Role added"
-  );
-}
-
-for (const role of removedRoles.values()) {
-  await sendRoleLog(
-    newMember,
-    role,
-    "removed",
-    "Role removed"
-  );
-}
-
 // ======================================================
 // NICKNAME LOG
 // ======================================================
 
-if (nicknameChanged) {
-  await sendNicknameLog(
-    newMember,
-    oldMember.nickname,
-    newMember.nickname,
-    expectedBotNickname
-      ? "Bot nickname manager"
-      : "Manual nickname change"
-  );
-}
+async function sendNicknameLog(
+  member,
+  oldNickname,
+  newNickname,
+  reason = "Nickname changed"
+) {
   try {
     if (!NICKNAME_LOG_CHANNEL_ID) {
       return;
@@ -530,8 +505,8 @@ if (nicknameChanged) {
       .setTitle("🏷️ NICKNAME CHANGE")
       .addFields(
         {
-          name: "👤 Member",
-          value: `<@${member.id}>`,
+          name: "👤 Username",
+          value: `${member.user.tag}`,
           inline: false,
         },
         {
@@ -564,77 +539,91 @@ if (nicknameChanged) {
 }
 
 // ======================================================
-// ROLE LOG
+// ROLE CHANGE LOG
 // ======================================================
 
-async function sendRoleLog(
-  member,
-  role,
-  action,
-  reason = "Role changed"
+async function sendRoleChangeLog(
+  oldMember,
+  newMember
 ) {
   try {
-    if (!ROLE_LOG_CHANNEL_ID) {
+    if (!LOG_CHANNEL_ID) {
       return;
     }
 
     const channel =
-      await member.guild.channels.fetch(
-        ROLE_LOG_CHANNEL_ID
+      await newMember.guild.channels.fetch(
+        LOG_CHANNEL_ID
       );
 
     if (!channel || !channel.isTextBased()) {
       console.log(
-        "⚠️ ROLE_LOG_CHANNEL_ID is not a valid text channel."
+        "⚠️ LOG_CHANNEL_ID is not a valid text channel."
       );
       return;
     }
 
-    const isAdded = action === "added";
+    const oldRoles =
+      oldMember.roles.cache
+        .filter(
+          (role) =>
+            role.id !== newMember.guild.id
+        )
+        .map(
+          (role) =>
+            `<@&${role.id}>`
+        )
+        .join("\n") || "None";
+
+    const newRoles =
+      newMember.roles.cache
+        .filter(
+          (role) =>
+            role.id !== newMember.guild.id
+        )
+        .map(
+          (role) =>
+            `<@&${role.id}>`
+        )
+        .join("\n") || "None";
 
     const embed = new EmbedBuilder()
-      .setColor(
-        isAdded
-          ? "#57F287"
-          : "#ED4245"
-      )
-      .setTitle(
-        isAdded
-          ? "🎭 ROLE ADDED"
-          : "🎭 ROLE REMOVED"
-      )
+      .setColor("#5865F2")
+      .setTitle("🎭 ROLE CHANGED")
       .addFields(
         {
-          name: "👤 Member",
-          value: `<@${member.id}>`,
+          name: "👤 Username",
+          value: `${newMember.user.tag}`,
           inline: false,
         },
         {
-          name: "🎭 Role",
-          value: `<@&${role.id}>`,
+          name: "📤 Old Roles",
+          value: oldRoles,
           inline: true,
         },
         {
-          name: "📌 Action",
-          value: isAdded
-            ? "✅ Added"
-            : "❌ Removed",
+          name: "📥 New Roles",
+          value: newRoles,
           inline: true,
-        },
-        {
-          name: "📝 Reason",
-          value: reason,
-          inline: false,
         }
       )
-      .setTimestamp();
+      .setFooter({
+        text: new Date().toLocaleString(
+          "en-PH",
+          {
+            timeZone: "Asia/Manila",
+            dateStyle: "medium",
+            timeStyle: "short",
+          }
+        ),
+      });
 
     await channel.send({
       embeds: [embed],
     });
   } catch (error) {
     console.error(
-      "❌ Failed to send role log:",
+      "❌ Failed to send role change log:",
       error
     );
   }
@@ -2636,7 +2625,61 @@ client.on(
       }
 
       // ------------------------------------------------
-      // Detect bot's own nickname change
+      // Detect nickname change
+      // ------------------------------------------------
+
+      const nicknameChanged =
+        oldMember.nickname !==
+        newMember.nickname;
+
+      // ------------------------------------------------
+      // Detect role changes
+      // ------------------------------------------------
+
+      const addedRoles =
+        newMember.roles.cache.filter(
+          (role) =>
+            !oldMember.roles.cache.has(
+              role.id
+            )
+        );
+
+      const removedRoles =
+        oldMember.roles.cache.filter(
+          (role) =>
+            !newMember.roles.cache.has(
+              role.id
+            )
+        );
+
+      const rolesChanged =
+        addedRoles.size > 0 ||
+        removedRoles.size > 0;
+
+      // ------------------------------------------------
+      // Nothing changed
+      // ------------------------------------------------
+
+      if (
+        !nicknameChanged &&
+        !rolesChanged
+      ) {
+        return;
+      }
+
+      // ------------------------------------------------
+      // ROLE LOG
+      // ------------------------------------------------
+
+      if (rolesChanged) {
+        await sendRoleChangeLog(
+          oldMember,
+          newMember
+        );
+      }
+
+      // ------------------------------------------------
+      // NICKNAME LOG
       // ------------------------------------------------
 
       const expectedBotNickname =
@@ -2644,10 +2687,29 @@ client.on(
           newMember.id
         );
 
-      if (
-        expectedBotNickname &&
-        newMember.nickname === expectedBotNickname
-      ) {
+      const botChangedNickname =
+        Boolean(
+          expectedBotNickname &&
+          newMember.nickname ===
+            expectedBotNickname
+        );
+
+      if (nicknameChanged) {
+        await sendNicknameLog(
+          newMember,
+          oldMember.nickname,
+          newMember.nickname,
+          botChangedNickname
+            ? "Bot nickname manager"
+            : "Manual nickname change"
+        );
+      }
+
+      // ------------------------------------------------
+      // Clear bot nickname marker
+      // ------------------------------------------------
+
+      if (botChangedNickname) {
         botNicknameChanges.delete(
           newMember.id
         );
@@ -2656,48 +2718,16 @@ client.on(
       }
 
       // ------------------------------------------------
-      // Detect manual nickname change
+      // SYNCHRONIZE NICKNAME
       // ------------------------------------------------
-
-      const nicknameChanged =
-        oldMember.nickname !==
-        newMember.nickname;
-
-      // ------------------------------------------------
-      // Detect role change
-      // ------------------------------------------------
-
-      const addedRoles =
-  newMember.roles.cache.filter(
-    (role) =>
-      !oldMember.roles.cache.has(role.id)
-  );
-
-const removedRoles =
-  oldMember.roles.cache.filter(
-    (role) =>
-      !newMember.roles.cache.has(role.id)
-  );
-
-const rolesChanged =
-  addedRoles.size > 0 ||
-  removedRoles.size > 0;
-
-if (!nicknameChanged && !rolesChanged) {
-  return;
-}
 
       let baseNickname;
 
       if (nicknameChanged) {
-        // If someone manually removes the guild nickname,
-        // restore the original Discord username as base.
         if (!newMember.nickname) {
           baseNickname =
             newMember.user.username;
         } else {
-          // Otherwise, preserve the manually selected
-          // nickname as the new base and only manage tags.
           baseNickname =
             stripManagedNicknameTags(
               newMember.nickname
@@ -2709,8 +2739,6 @@ if (!nicknameChanged && !rolesChanged) {
           }
         }
       } else {
-        // Role changed but nickname did not.
-        // Recover the existing base from the current nickname.
         baseNickname =
           getBaseNickname(newMember);
       }
@@ -2724,6 +2752,7 @@ if (!nicknameChanged && !rolesChanged) {
         newMember,
         baseNickname
       );
+
     } catch (error) {
       console.error(
         "❌ guildMemberUpdate error:",
