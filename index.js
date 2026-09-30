@@ -342,6 +342,21 @@ function buildManagedNickname(member, baseNickname) {
     suffixes.push("LMP");
   }
 
+  // Partnership → ❉
+  if (hasRole(member, PARTNERSHIP_ROLE_ID)) {
+    suffixes.push("❉");
+  }
+
+  // Collaborator → ❊
+  if (hasRole(member, COLLABORATOR_ROLE_ID)) {
+    suffixes.push("❊");
+  }
+
+  // Sponsor → ❋
+  if (hasRole(member, SPONSOR_ROLE_ID)) {
+    suffixes.push("❋");
+  }
+
   const suffix = suffixes.length
     ? ` ${suffixes.join(" ")}`
     : "";
@@ -590,7 +605,9 @@ async function sendNicknameLog(
 
 async function sendRoleChangeLog(
   oldMember,
-  newMember
+  newMember,
+  addedRoles,
+  removedRoles
 ) {
   try {
     if (!LOG_CHANNEL_ID) {
@@ -612,6 +629,10 @@ async function sendRoleChangeLog(
       return;
     }
 
+    // --------------------------------------------------
+    // ALL OLD ROLES
+    // --------------------------------------------------
+
     const oldRoles =
       oldMember.roles.cache
         .filter(
@@ -625,6 +646,10 @@ async function sendRoleChangeLog(
         )
         .join("\n") || "None";
 
+    // --------------------------------------------------
+    // ALL NEW ROLES
+    // --------------------------------------------------
+
     const newRoles =
       newMember.roles.cache
         .filter(
@@ -632,6 +657,30 @@ async function sendRoleChangeLog(
             role.id !==
             newMember.guild.id
         )
+        .map(
+          (role) =>
+            `<@&${role.id}>`
+        )
+        .join("\n") || "None";
+
+    // --------------------------------------------------
+    // ADDED ROLES
+    // --------------------------------------------------
+
+    const addedRoleList =
+      addedRoles
+        .map(
+          (role) =>
+            `<@&${role.id}>`
+        )
+        .join("\n") || "None";
+
+    // --------------------------------------------------
+    // REMOVED ROLES
+    // --------------------------------------------------
+
+    const removedRoleList =
+      removedRoles
         .map(
           (role) =>
             `<@&${role.id}>`
@@ -647,6 +696,16 @@ async function sendRoleChangeLog(
             name: "👤 Username",
             value: `${newMember.user.tag}`,
             inline: false,
+          },
+          {
+            name: "➕ Added Roles",
+            value: addedRoleList,
+            inline: true,
+          },
+          {
+            name: "➖ Removed Roles",
+            value: removedRoleList,
+            inline: true,
           },
           {
             name: "📤 Old Roles",
@@ -686,35 +745,35 @@ async function sendRoleChangeLog(
 // ======================================================
 
 function createNicknameEmbed() {
-const embed = new EmbedBuilder()
-.setColor("#5865F2")
-.setAuthor({
-name: "Pinoy Big Sister",
-iconURL: PICTURE_URL,
-})
-.setTitle("🏷️ REQUEST NICKNAME")
-.setDescription(
-[
-"For Official Lampoon Members & Creators",
-"Use your TikTok username or IGN for easy identification.",
-"",
-"For Community Members",
-"Use your In-Game Name (IGN).",
-"If your current server nickname already matches your IGN, no request is needed.",
-"",
-"### 📌 Nickname Format",
-"🎭 Lampoon → LMP.Kagayaku",
-"🎮 Content Creator → Kagayaku cc",
-"🎭 + 🎮 Lampoon + Content Creator → LMP.Kagayaku cc",
-"",
-"Click below to request or update your server nickname.",
-].join("\n")
-)
-.setFooter({
-text: "Pinoy Big Sister • Nickname Request",
-});
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setAuthor({
+      name: "Pinoy Big Sister",
+      iconURL: PICTURE_URL,
+    })
+    .setTitle("🏷️ REQUEST NICKNAME")
+    .setDescription(
+      [
+        "For Official Lampoon Members & Creators",
+        "Use your TikTok username or IGN for easy identification.",
+        "",
+        "For Community Members",
+        "Use your In-Game Name (IGN).",
+        "If your current server nickname already matches your IGN, no request is needed.",
+        "",
+        "### 📌 Nickname Format",
+        "🎭 Lampoon → LMP.Kagayaku",
+        "🎮 Content Creator → Kagayaku cc",
+        "🎭 + 🎮 Lampoon + Content Creator → LMP.Kagayaku cc",
+        "",
+        "Click below to request or update your server nickname.",
+      ].join("\n")
+    )
+    .setFooter({
+      text: "Pinoy Big Sister • Nickname Request",
+    });
 
-return embed;
+  return embed;
 }
 
 // ======================================================
@@ -722,28 +781,28 @@ return embed;
 // ======================================================
 
 function createHouseGuardEmbed() {
-const embed = new EmbedBuilder()
-.setColor("#5865F2")
-.setTitle("🐕 BIG SISTER HOUSE • HOUSE GUARD")
-.setDescription(
-[
-"🚨 Beware of the Barking Dogs!",
-"",
-"🐕 The House Guards protect the Big Sister House and watch the outside of the house.",
-"",
-"🔊 Unauthorized attempts to enter restricted areas may attract their attention.",
-"",
-"🚪 Please respect the House boundaries.",
-"",
-"> ||🐕 The House Guards are watching...||",
-].join("\n")
-);
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🐕 BIG SISTER HOUSE • HOUSE GUARD")
+    .setDescription(
+      [
+        "🚨 Beware of the Barking Dogs!",
+        "",
+        "🐕 The House Guards protect the Big Sister House and watch the outside of the house.",
+        "",
+        "🔊 Unauthorized attempts to enter restricted areas may attract their attention.",
+        "",
+        "🚪 Please respect the House boundaries.",
+        "",
+        "> ||🐕 The House Guards are watching...||",
+      ].join("\n")
+    );
 
-if (DOG_GIF_URL) {
-embed.setThumbnail(DOG_GIF_URL);
-}
+  if (DOG_GIF_URL) {
+    embed.setThumbnail(DOG_GIF_URL);
+  }
 
-return embed;
+  return embed;
 }
 
 // ======================================================
@@ -751,38 +810,38 @@ return embed;
 // ======================================================
 
 function createGenderAccessEmbed() {
-const embed = new EmbedBuilder()
-.setColor("#5865F2")
-.setTitle("🏠 BIG SISTER HOUSE • GENDER ACCESS")
-.setDescription(
-[
-"Your approved gender role determines which private Room/House you can access.",
-"",
-"### 🔐 ACCESS",
-"Choose the gender category that applies to you.",
-"Your request will be reviewed by Registration Staff before access is granted.",
-"",
-"♂️ Male",
-"♀️ Female",
-"🏳️‍🌈 LGBT+",
-"🔒 Prefer not to say",
-"",
-"> ||🔐 Access is granted only after staff approval.||",
-"",
-"### 🏠 HOUSE RULES",
-"Please remain in your assigned Room/House and respect the access boundaries.",
-].join("\n")
-)
-.setFooter({
-text: "Pinoy Big Sister • Private House Access",
-});
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🏠 BIG SISTER HOUSE • GENDER ACCESS")
+    .setDescription(
+      [
+        "Your approved gender role determines which private Room/House you can access.",
+        "",
+        "### 🔐 ACCESS",
+        "Choose the gender category that applies to you.",
+        "Your request will be reviewed by Registration Staff before access is granted.",
+        "",
+        "♂️ Male",
+        "♀️ Female",
+        "🏳️‍🌈 LGBT+",
+        "🔒 Prefer not to say",
+        "",
+        "> ||🔐 Access is granted only after staff approval.||",
+        "",
+        "### 🏠 HOUSE RULES",
+        "Please remain in your assigned Room/House and respect the access boundaries.",
+      ].join("\n")
+    )
+    .setFooter({
+      text: "Pinoy Big Sister • Private House Access",
+    });
 
-if (HOUSE_IMAGE_URL) {
-embed.setImage(HOUSE_IMAGE_URL);
-}
-
-return embed;
+  if (HOUSE_IMAGE_URL) {
+    embed.setImage(HOUSE_IMAGE_URL);
   }
+
+  return embed;
+}
 
 // ======================================================
 // PANEL BUTTONS
@@ -2993,7 +3052,7 @@ client.on(
         newMember.nickname;
 
       // ------------------------------------------------
-      // Detect role changes
+      // Detect ALL role changes
       // ------------------------------------------------
 
       const addedRoles =
@@ -3034,7 +3093,9 @@ client.on(
       if (rolesChanged) {
         await sendRoleChangeLog(
           oldMember,
-          newMember
+          newMember,
+          addedRoles,
+          removedRoles
         );
       }
 
