@@ -25,7 +25,7 @@ const PORT = Number(process.env.PORT) || 10000;
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
+const ROLE_LOG_CHANNEL_ID = process.env.ROLE_LOG_CHANNEL_ID;
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 
 const NICKNAME_LOG_CHANNEL_ID =
@@ -464,6 +464,180 @@ async function syncMemberNickname(member, baseNickname = null) {
     member,
     baseNickname
   );
+}
+
+// ------------------------------------------------
+// ROLE LOGGING
+// ------------------------------------------------
+
+for (const role of addedRoles.values()) {
+  await sendRoleLog(
+    newMember,
+    role,
+    "added",
+    "Role added"
+  );
+}
+
+for (const role of removedRoles.values()) {
+  await sendRoleLog(
+    newMember,
+    role,
+    "removed",
+    "Role removed"
+  );
+}
+
+// ======================================================
+// NICKNAME LOG
+// ======================================================
+
+if (nicknameChanged) {
+  await sendNicknameLog(
+    newMember,
+    oldMember.nickname,
+    newMember.nickname,
+    expectedBotNickname
+      ? "Bot nickname manager"
+      : "Manual nickname change"
+  );
+}
+  try {
+    if (!NICKNAME_LOG_CHANNEL_ID) {
+      return;
+    }
+
+    const channel =
+      await member.guild.channels.fetch(
+        NICKNAME_LOG_CHANNEL_ID
+      );
+
+    if (!channel || !channel.isTextBased()) {
+      console.log(
+        "⚠️ NICKNAME_LOG_CHANNEL_ID is not a valid text channel."
+      );
+      return;
+    }
+
+    const oldName =
+      oldNickname || member.user.username;
+
+    const newName =
+      newNickname || member.user.username;
+
+    const embed = new EmbedBuilder()
+      .setColor("#5865F2")
+      .setTitle("🏷️ NICKNAME CHANGE")
+      .addFields(
+        {
+          name: "👤 Member",
+          value: `<@${member.id}>`,
+          inline: false,
+        },
+        {
+          name: "Before",
+          value: `\`${oldName}\``,
+          inline: true,
+        },
+        {
+          name: "After",
+          value: `\`${newName}\``,
+          inline: true,
+        },
+        {
+          name: "📝 Reason",
+          value: reason,
+          inline: false,
+        }
+      )
+      .setTimestamp();
+
+    await channel.send({
+      embeds: [embed],
+    });
+  } catch (error) {
+    console.error(
+      "❌ Failed to send nickname log:",
+      error
+    );
+  }
+}
+
+// ======================================================
+// ROLE LOG
+// ======================================================
+
+async function sendRoleLog(
+  member,
+  role,
+  action,
+  reason = "Role changed"
+) {
+  try {
+    if (!ROLE_LOG_CHANNEL_ID) {
+      return;
+    }
+
+    const channel =
+      await member.guild.channels.fetch(
+        ROLE_LOG_CHANNEL_ID
+      );
+
+    if (!channel || !channel.isTextBased()) {
+      console.log(
+        "⚠️ ROLE_LOG_CHANNEL_ID is not a valid text channel."
+      );
+      return;
+    }
+
+    const isAdded = action === "added";
+
+    const embed = new EmbedBuilder()
+      .setColor(
+        isAdded
+          ? "#57F287"
+          : "#ED4245"
+      )
+      .setTitle(
+        isAdded
+          ? "🎭 ROLE ADDED"
+          : "🎭 ROLE REMOVED"
+      )
+      .addFields(
+        {
+          name: "👤 Member",
+          value: `<@${member.id}>`,
+          inline: false,
+        },
+        {
+          name: "🎭 Role",
+          value: `<@&${role.id}>`,
+          inline: true,
+        },
+        {
+          name: "📌 Action",
+          value: isAdded
+            ? "✅ Added"
+            : "❌ Removed",
+          inline: true,
+        },
+        {
+          name: "📝 Reason",
+          value: reason,
+          inline: false,
+        }
+      )
+      .setTimestamp();
+
+    await channel.send({
+      embeds: [embed],
+    });
+  } catch (error) {
+    console.error(
+      "❌ Failed to send role log:",
+      error
+    );
+  }
 }
 
 // ======================================================
@@ -1115,6 +1289,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   try {
+    
     // ==================================================
     // STAFF CHECK
     // ==================================================
@@ -2492,25 +2667,25 @@ client.on(
       // Detect role change
       // ------------------------------------------------
 
-      const rolesChanged =
-        oldMember.roles.cache.size !==
-          newMember.roles.cache.size ||
-        oldMember.roles.cache.some(
-          (role) =>
-            !newMember.roles.cache.has(
-              role.id
-            )
-        ) ||
-        newMember.roles.cache.some(
-          (role) =>
-            !oldMember.roles.cache.has(
-              role.id
-            )
-        );
+      const addedRoles =
+  newMember.roles.cache.filter(
+    (role) =>
+      !oldMember.roles.cache.has(role.id)
+  );
 
-      if (!nicknameChanged && !rolesChanged) {
-        return;
-      }
+const removedRoles =
+  oldMember.roles.cache.filter(
+    (role) =>
+      !newMember.roles.cache.has(role.id)
+  );
+
+const rolesChanged =
+  addedRoles.size > 0 ||
+  removedRoles.size > 0;
+
+if (!nicknameChanged && !rolesChanged) {
+  return;
+}
 
       let baseNickname;
 
